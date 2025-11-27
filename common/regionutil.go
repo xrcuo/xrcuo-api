@@ -5,9 +5,8 @@ import (
 	"strings"
 	"sync"
 
-	"go-boot/config"
-
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
+	"github.com/xrcuo/xrcuo-api/config"
 )
 
 // RegionParts 地区结构化数据

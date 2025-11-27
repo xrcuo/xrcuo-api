@@ -1,6 +1,6 @@
-module go-boot
+module github.com/xrcuo/xrcuo-api
 
-go 1.24 // 你的 Go 版本
+go 1.24 
 
 require (
 	github.com/gin-gonic/gin v1.11.0

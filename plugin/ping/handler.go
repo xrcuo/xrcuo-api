@@ -5,10 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"go-boot/common"
-
 	"github.com/gin-gonic/gin"
 	"github.com/go-ping/ping"
+	"github.com/xrcuo/xrcuo-api/common"
 )
 
 // PingHandler Ping测试处理函数

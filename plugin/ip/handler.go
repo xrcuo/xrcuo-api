@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"go-boot/common"
-
 	"github.com/gin-gonic/gin"
+	"github.com/xrcuo/xrcuo-api/common"
 )
 
 // SearchRegionHandler IP地区查询处理函数

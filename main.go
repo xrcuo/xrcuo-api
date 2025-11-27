@@ -1,11 +1,10 @@
 package main
 
 import (
-	"go-boot/config"
-	"go-boot/plugin/ip"
-	"go-boot/plugin/ping"
-
 	"github.com/gin-gonic/gin"
+	"github.com/xrcuo/xrcuo-api/config"
+	"github.com/xrcuo/xrcuo-api/plugin/ip"
+	"github.com/xrcuo/xrcuo-api/plugin/ping"
 )
 
 func main() {
