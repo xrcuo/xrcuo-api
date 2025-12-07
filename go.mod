@@ -6,6 +6,8 @@ require (
 	github.com/gin-gonic/gin v1.11.0
 	github.com/go-ping/ping v1.2.0
 	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20251124080701-096d68ea7706
+	github.com/sirupsen/logrus v1.9.3
+	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.40.1
 )
 

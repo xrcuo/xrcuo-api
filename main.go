@@ -12,15 +12,18 @@ import (
 )
 
 func main() {
-	// 1. 初始化数据库
+	// 1. 解析配置文件
+	config.Parse()
+
+	// 2. 初始化数据库
 	if err := db.InitDB(); err != nil {
 		panic("数据库初始化失败：" + err.Error())
 	}
 
-	// 2. 初始化统计信息
+	// 3. 初始化统计信息
 	common.InitStats()
 
-	// 2. 初始化Gin引擎（生产环境改为gin.ReleaseMode）
+	// 4. 初始化Gin引擎（生产环境改为gin.ReleaseMode）
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
 
@@ -50,12 +53,13 @@ func main() {
 	r.GET("/stats", common.StatsHandler)
 
 	// 5. 启动服务
-	println("服务启动成功，监听地址：http://localhost" + config.ServerPort)
-	println("IP接口示例：http://localhost" + config.ServerPort + "/api/ip?ip=114.114.114.114")
-	println("Ping接口示例：http://localhost" + config.ServerPort + "/api/ping?target=www.baidu.com&count=3")
-	println("统计页面：http://localhost" + config.ServerPort + "/stats")
+	port := config.GetServerPort()
+	println("服务启动成功，监听地址：http://localhost" + port)
+	println("IP接口示例：http://localhost" + port + "/api/ip?ip=114.114.114.114")
+	println("Ping接口示例：http://localhost" + port + "/api/ping?target=www.baidu.com&count=3")
+	println("统计页面：http://localhost" + port + "/stats")
 
-	if err := r.Run(config.ServerPort); err != nil {
+	if err := r.Run(port); err != nil {
 		panic("服务启动失败：" + err.Error())
 	}
 }

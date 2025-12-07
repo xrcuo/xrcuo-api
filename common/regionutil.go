@@ -20,7 +20,7 @@ type RegionParts struct {
 // 公共对象池（复用ip2region查询器，减少资源占用）
 var regionSearcherPool = sync.Pool{
 	New: func() interface{} {
-		searcher, err := xdb.NewWithFileOnly(config.IPVersion, config.IP2RegionDBPath)
+		searcher, err := xdb.NewWithFileOnly(config.GetIPVersion(), config.GetIP2RegionDBPath())
 		if err != nil {
 			return nil
 		}
