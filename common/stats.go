@@ -1,30 +1,18 @@
 package common
 
 import (
+	"log"
 	"sync"
 	"time"
+
+	"github.com/xrcuo/xrcuo-api/db"
+	"github.com/xrcuo/xrcuo-api/models"
 )
 
 // Stats 存储API调用统计信息
 type Stats struct {
-	TotalCalls      int64            `json:"total_calls"`       // 总调用次数
-	DailyCalls      int64            `json:"daily_calls"`       // 今日调用次数
-	HourlyCalls     int64            `json:"hourly_calls"`      // 每小时调用次数
-	MethodCalls     map[string]int64 `json:"method_calls"`      // 按HTTP方法统计
-	PathCalls       map[string]int64 `json:"path_calls"`        // 按API路径统计
-	IPCalls         map[string]int64 `json:"ip_calls"`          // 按IP统计
-	LastResetTime   time.Time        `json:"last_reset_time"`   // 上次重置时间
-	LastCallDetails []*CallDetail    `json:"last_call_details"` // 最近调用详情
-	mu              sync.RWMutex     // 读写锁，保证并发安全
-}
-
-// CallDetail 存储单个API调用的详细信息
-type CallDetail struct {
-	Path       string    `json:"path"`        // 请求路径
-	Method     string    `json:"method"`      // 请求方法
-	IP         string    `json:"ip"`          // 请求IP
-	Timestamp  time.Time `json:"timestamp"`   // 请求时间
-	StatusCode int       `json:"status_code"` // 响应状态码
+	models.Stats
+	mu sync.RWMutex // 读写锁，保证并发安全
 }
 
 // 全局统计实例
@@ -32,13 +20,28 @@ var GlobalStats *Stats
 
 // InitStats 初始化统计信息
 func InitStats() {
-	GlobalStats = &Stats{
-		MethodCalls:     make(map[string]int64),
-		PathCalls:       make(map[string]int64),
-		IPCalls:         make(map[string]int64),
-		LastResetTime:   time.Now(),
-		LastCallDetails: make([]*CallDetail, 0, 100), // 保留最近100条记录
+	// 从数据库加载统计数据
+	statsData, err := db.LoadStats()
+	if err != nil {
+		log.Printf("从数据库加载统计数据失败: %v，使用默认值", err)
+		// 使用默认值
+		statsData = &models.Stats{
+			MethodCalls:     make(map[string]int64),
+			PathCalls:       make(map[string]int64),
+			IPCalls:         make(map[string]int64),
+			LastResetTime:   time.Now(),
+			LastCallDetails: make([]*models.CallDetail, 0, 100), // 保留最近100条记录
+		}
 	}
+
+	stats := &Stats{
+		Stats: *statsData,
+	}
+
+	GlobalStats = stats
+
+	// 启动定时保存任务（每30秒保存一次统计数据）
+	go startPeriodicSave()
 }
 
 // RecordCall 记录API调用
@@ -70,7 +73,7 @@ func (s *Stats) RecordCall(path, method, ip string, statusCode int) {
 	}
 
 	// 记录最近调用详情
-	detail := &CallDetail{
+	detail := &models.CallDetail{
 		Path:       path,
 		Method:     method,
 		IP:         ip,
@@ -84,15 +87,48 @@ func (s *Stats) RecordCall(path, method, ip string, statusCode int) {
 		s.LastCallDetails = s.LastCallDetails[1:]
 	}
 	s.LastCallDetails = append(s.LastCallDetails, detail)
+
+	// 异步保存调用详情到数据库
+	go func() {
+		if err := db.SaveCallDetail(detail); err != nil {
+			log.Printf("保存调用详情到数据库失败: %v", err)
+		}
+	}()
+}
+
+// SaveStats 保存统计信息到数据库
+func (s *Stats) SaveStats() error {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	// 创建副本
+	statsCopy := s.GetStats()
+
+	// 保存到数据库
+	return db.SaveStats(statsCopy)
+}
+
+// startPeriodicSave 启动定时保存任务
+func startPeriodicSave() {
+	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
+	for range ticker.C {
+		if err := GlobalStats.SaveStats(); err != nil {
+			log.Printf("定时保存统计数据失败: %v", err)
+		} else {
+			log.Println("统计数据已保存到数据库")
+		}
+	}
 }
 
 // GetStats 获取统计信息
-func (s *Stats) GetStats() *Stats {
+func (s *Stats) GetStats() *models.Stats {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	// 创建一个副本返回，避免并发问题
-	copy := &Stats{
+	copy := &models.Stats{
 		TotalCalls:      s.TotalCalls,
 		DailyCalls:      s.DailyCalls,
 		HourlyCalls:     s.HourlyCalls,
@@ -100,7 +136,7 @@ func (s *Stats) GetStats() *Stats {
 		PathCalls:       make(map[string]int64),
 		IPCalls:         make(map[string]int64),
 		LastResetTime:   s.LastResetTime,
-		LastCallDetails: make([]*CallDetail, len(s.LastCallDetails)),
+		LastCallDetails: make([]*models.CallDetail, len(s.LastCallDetails)),
 	}
 
 	// 复制map数据
@@ -116,7 +152,7 @@ func (s *Stats) GetStats() *Stats {
 
 	// 复制调用详情
 	for i, detail := range s.LastCallDetails {
-		copy.LastCallDetails[i] = &CallDetail{
+		copy.LastCallDetails[i] = &models.CallDetail{
 			Path:       detail.Path,
 			Method:     detail.Method,
 			IP:         detail.IP,

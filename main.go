@@ -4,12 +4,18 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/xrcuo/xrcuo-api/common"
 	"github.com/xrcuo/xrcuo-api/config"
+	"github.com/xrcuo/xrcuo-api/db"
 	"github.com/xrcuo/xrcuo-api/plugin/ip"
 	"github.com/xrcuo/xrcuo-api/plugin/ping"
 )
 
 func main() {
-	// 1. 初始化统计信息
+	// 1. 初始化数据库
+	if err := db.InitDB(); err != nil {
+		panic("数据库初始化失败：" + err.Error())
+	}
+
+	// 2. 初始化统计信息
 	common.InitStats()
 
 	// 2. 初始化Gin引擎（生产环境改为gin.ReleaseMode）
