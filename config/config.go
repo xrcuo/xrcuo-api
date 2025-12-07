@@ -3,8 +3,10 @@ package config
 import (
 	_ "embed"
 	"os"
+	"path/filepath"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
+	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
@@ -24,7 +26,11 @@ type Config struct {
 	} `yaml:"ip2region"`
 
 	Log struct {
-		Level string `yaml:"level"`
+		Level      string `yaml:"level"`
+		File       string `yaml:"file"`
+		MaxSize    int    `yaml:"max_size"`    // 单个日志文件最大大小（MB）
+		MaxBackups int    `yaml:"max_backups"` // 保留的日志文件数量
+		MaxAge     int    `yaml:"max_age"`     // 日志文件保留天数
 	} `yaml:"log"`
 }
 
@@ -49,9 +55,9 @@ func getConfigPath() string {
 func Parse() {
 	// 使用环境变量或默认路径
 	configPath := getConfigPath()
-	
+
 	logrus.Debugf("正在解析配置文件: %s", configPath)
-	
+
 	// 检查文件是否存在
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		err = genConfig()
@@ -116,8 +122,9 @@ func GetLogLevel() string {
 	return Conf.Log.Level
 }
 
-// 根据配置设置日志级别
+// 根据配置设置日志级别和文件输出
 func setLogLevel() {
+	// 设置日志级别
 	levelStr := GetLogLevel()
 	level, err := logrus.ParseLevel(levelStr)
 	if err != nil {
@@ -125,8 +132,38 @@ func setLogLevel() {
 		level = logrus.InfoLevel
 	}
 	logrus.SetLevel(level)
+
+	// 设置日志格式
 	logrus.SetFormatter(&logrus.TextFormatter{
 		FullTimestamp: true,
 	})
+
+	// 如果配置了日志文件路径，则添加文件输出
+	if Conf.Log.File != "" {
+		// 确保日志目录存在
+		logDir := filepath.Dir(Conf.Log.File)
+		if err := os.MkdirAll(logDir, 0755); err != nil {
+			logrus.Warnf("创建日志目录失败: %v, 仅输出到控制台", err)
+			return
+		}
+
+		// 配置日志文件输出
+		logrus.AddHook(lfshook.NewHook(
+			lfshook.PathMap{
+				logrus.InfoLevel:  Conf.Log.File,
+				logrus.DebugLevel: Conf.Log.File,
+				logrus.WarnLevel:  Conf.Log.File,
+				logrus.ErrorLevel: Conf.Log.File,
+				logrus.FatalLevel: Conf.Log.File,
+				logrus.PanicLevel: Conf.Log.File,
+			},
+			&logrus.TextFormatter{
+				FullTimestamp: true,
+			},
+		))
+
+		logrus.Infof("日志文件已配置: %s", Conf.Log.File)
+	}
+
 	logrus.Debugf("日志级别已设置为: %s", level)
 }
