@@ -1,6 +1,8 @@
 package main
 
 import (
+	"html/template"
+
 	"github.com/gin-gonic/gin"
 	"github.com/xrcuo/xrcuo-api/common"
 	"github.com/xrcuo/xrcuo-api/config"
@@ -21,6 +23,17 @@ func main() {
 	// 2. 初始化Gin引擎（生产环境改为gin.ReleaseMode）
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
+
+	// 设置模板路径和自定义函数
+	r.SetFuncMap(template.FuncMap{
+		"percentage": func(total, count int64) int {
+			if total == 0 {
+				return 0
+			}
+			return int((float64(count) / float64(total)) * 100)
+		},
+	})
+	r.LoadHTMLGlob("templates/*")
 
 	// 3. 注册API根路由（所有插件路由都挂载在/api下）
 	apiGroup := r.Group("/api")
