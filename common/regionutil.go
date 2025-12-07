@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
+	"github.com/sirupsen/logrus"
 	"github.com/xrcuo/xrcuo-api/config"
 )
 
@@ -17,15 +18,32 @@ type RegionParts struct {
 	Isp      string // 运营商
 }
 
+// 预加载的IP2Region查询器
+var preloadedSearcher *xdb.Searcher
+
 // 公共对象池（复用ip2region查询器，减少资源占用）
 var regionSearcherPool = sync.Pool{
 	New: func() interface{} {
-		searcher, err := xdb.NewWithFileOnly(config.GetIPVersion(), config.GetIP2RegionDBPath())
-		if err != nil {
-			return nil
-		}
-		return searcher
+		return preloadedSearcher
 	},
+}
+
+// InitIP2Region 预加载IP2Region数据库
+func InitIP2Region() error {
+	dbPath := config.GetIP2RegionDBPath()
+	ipVersion := config.GetIPVersion()
+
+	logrus.Infof("开始预加载IP2Region数据库: %s, IP版本: %v", dbPath, ipVersion)
+
+	// 预加载数据库到内存
+	searcher, err := xdb.NewWithFileOnly(ipVersion, dbPath)
+	if err != nil {
+		return fmt.Errorf("IP2Region数据库预加载失败: %v", err)
+	}
+
+	preloadedSearcher = searcher
+	logrus.Info("IP2Region数据库预加载成功")
+	return nil
 }
 
 // GetRegionByIP 根据IP获取地区信息（支持内网IP识别）

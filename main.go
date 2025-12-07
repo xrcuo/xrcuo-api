@@ -4,6 +4,7 @@ import (
 	"html/template"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/xrcuo/xrcuo-api/common"
 	"github.com/xrcuo/xrcuo-api/config"
 	"github.com/xrcuo/xrcuo-api/db"
@@ -17,15 +18,30 @@ func main() {
 
 	// 2. 初始化数据库
 	if err := db.InitDB(); err != nil {
-		panic("数据库初始化失败：" + err.Error())
+		logrus.Fatalf("数据库初始化失败：%v", err)
 	}
 
-	// 3. 初始化统计信息
+	// 确保应用退出时关闭数据库连接
+	defer func() {
+		if err := db.CloseDB(); err != nil {
+			logrus.Errorf("关闭数据库连接失败：%v", err)
+		}
+	}()
+
+	// 3. 预加载IP2Region数据库
+	if err := common.InitIP2Region(); err != nil {
+		logrus.Fatalf("IP2Region数据库初始化失败：%v", err)
+	}
+
+	// 4. 初始化统计信息
 	common.InitStats()
 
 	// 4. 初始化Gin引擎（生产环境改为gin.ReleaseMode）
 	gin.SetMode(gin.DebugMode)
 	r := gin.Default()
+	// 添加全局中间件
+	r.Use(common.RequestLoggerMiddleware()) // 请求日志中间件
+	r.Use(common.CORSMiddleware())          // 跨域中间件
 
 	// 设置模板路径和自定义函数
 	r.SetFuncMap(template.FuncMap{
@@ -54,12 +70,12 @@ func main() {
 
 	// 5. 启动服务
 	port := config.GetServerPort()
-	println("服务启动成功，监听地址：http://localhost" + port)
-	println("IP接口示例：http://localhost" + port + "/api/ip?ip=114.114.114.114")
-	println("Ping接口示例：http://localhost" + port + "/api/ping?target=www.baidu.com&count=3")
-	println("统计页面：http://localhost" + port + "/stats")
+	logrus.Infof("服务启动成功，监听地址：http://localhost%s", port)
+	logrus.Infof("IP接口示例：http://localhost%s/api/ip?ip=114.114.114.114", port)
+	logrus.Infof("Ping接口示例：http://localhost%s/api/ping?target=www.baidu.com&count=3", port)
+	logrus.Infof("统计页面：http://localhost%s/stats", port)
 
 	if err := r.Run(port); err != nil {
-		panic("服务启动失败：" + err.Error())
+		logrus.Fatalf("服务启动失败：%v", err)
 	}
 }

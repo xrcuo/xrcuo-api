@@ -1,0 +1,12 @@
+# 服务器配置
+server:
+  port: ":8080"  # 服务监听端口
+
+# IP2Region配置
+ip2region:
+  db_path: "./ip2region_v4.xdb"  # ip2region数据库路径
+  ip_version: "ipv4"  # IP版本（ipv4或ipv6）
+
+# 日志配置
+log:
+  level: "info"  # 日志级别（debug, info, warn, error）

@@ -3,7 +3,6 @@ package config
 import (
 	_ "embed"
 	"os"
-	"strings"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 	"github.com/sirupsen/logrus"
@@ -33,29 +32,35 @@ var Conf *Config
 
 // 生成配置文件
 func genConfig() error {
-	sb := strings.Builder{}
-	sb.WriteString(defConfig)
-	err := os.WriteFile("config.yaml", []byte(sb.String()), 0644)
-	if err != nil {
-		return err
+	configPath := getConfigPath()
+	logrus.Debugf("正在生成配置文件: %s", configPath)
+	return os.WriteFile(configPath, []byte(defConfig), 0644)
+}
+
+// 获取配置文件路径，支持从环境变量CONFIG_FILE_PATH指定
+func getConfigPath() string {
+	if path := os.Getenv("CONFIG_FILE_PATH"); path != "" {
+		return path
 	}
-	return nil
+	return "config.yaml"
 }
 
 // 解析配置文件
 func Parse() {
-	// 使用绝对路径确保配置文件位置正确
-	configPath := "config.yaml"
-
+	// 使用环境变量或默认路径
+	configPath := getConfigPath()
+	
+	logrus.Debugf("正在解析配置文件: %s", configPath)
+	
 	// 检查文件是否存在
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		err = genConfig()
 		if err != nil {
-			panic("无法生成设置文件: config.yaml, 请确认是否给足系统权限")
+			logrus.Fatalf("无法生成设置文件: %s, 请确认是否给足系统权限", configPath)
 		}
-		logrus.Warn("未检测到 config.yaml，已自动于同目录生成，请配置并重新启动")
+		logrus.Warnf("未检测到 %s，已自动生成，请配置并重新启动", configPath)
 		logrus.Warn("将于 5 秒后退出...")
-		os.Exit(-1)
+		os.Exit(1)
 	}
 
 	// 读取配置文件
@@ -70,6 +75,9 @@ func Parse() {
 	if err != nil {
 		logrus.Fatal("解析 config.yaml 失败，请检查格式、内容是否输入正确")
 	}
+
+	// 应用日志级别配置
+	setLogLevel()
 }
 
 // GetServerPort 获取服务器端口
@@ -106,4 +114,19 @@ func GetLogLevel() string {
 		return "info"
 	}
 	return Conf.Log.Level
+}
+
+// 根据配置设置日志级别
+func setLogLevel() {
+	levelStr := GetLogLevel()
+	level, err := logrus.ParseLevel(levelStr)
+	if err != nil {
+		logrus.Warnf("无效的日志级别: %s, 使用默认级别: info", levelStr)
+		level = logrus.InfoLevel
+	}
+	logrus.SetLevel(level)
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
+	})
+	logrus.Debugf("日志级别已设置为: %s", level)
 }

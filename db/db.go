@@ -3,8 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
 
+	"github.com/sirupsen/logrus"
 	_ "modernc.org/sqlite"
 )
 
@@ -19,6 +19,13 @@ func InitDB() error {
 	if err != nil {
 		return fmt.Errorf("打开数据库失败: %v", err)
 	}
+	
+	// 配置连接池
+	DB.SetMaxOpenConns(10)           // 最大打开连接数
+	DB.SetMaxIdleConns(5)            // 最大空闲连接数
+	DB.SetConnMaxLifetime(-1)        // 连接最大生命周期（-1表示无限制）
+	
+	logrus.Debug("数据库连接池配置完成")
 
 	// 测试数据库连接
 	if err = DB.Ping(); err != nil {
@@ -30,7 +37,7 @@ func InitDB() error {
 		return fmt.Errorf("创建表结构失败: %v", err)
 	}
 
-	log.Println("数据库初始化成功")
+	logrus.Info("数据库初始化成功")
 	return nil
 }
 
@@ -136,6 +143,7 @@ func createTables() error {
 // CloseDB 关闭数据库连接
 func CloseDB() error {
 	if DB != nil {
+		logrus.Info("正在关闭数据库连接")
 		return DB.Close()
 	}
 	return nil
