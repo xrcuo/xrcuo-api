@@ -1,0 +1,4 @@
+stats.db
+*.log
+temp/   
+config.yaml
