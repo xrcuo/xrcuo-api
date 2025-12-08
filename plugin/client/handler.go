@@ -23,20 +23,18 @@ func GetClientInfoHandler(c *gin.Context) {
 	}()
 
 	// 1. 获取客户端真实IP
-	clientIP := getRealIP(c)
+	clientIP := GetRealIP(c)
 
 	// 2. 调用公共工具查询IP地区信息
 	regionParts, err := common.GetRegionByIP(clientIP)
 
-	// 如果是内网IP或查询失败，调用外部服务获取真实公网IP
-	if err != nil || regionParts.Country == "内网IP" || regionParts.Country == "" {
-		// 调用外部服务获取真实公网IP
-		publicIP, err := getPublicIP()
-		if err == nil {
-			// 使用获取到的公网IP查询地理位置信息
-			regionParts, _ = common.GetRegionByIP(publicIP)
-			// 更新clientIP为真实公网IP
-			clientIP = publicIP
+	// 处理IP查询失败的情况，仍然返回客户端信息，只是地区信息为空
+	if err != nil {
+		regionParts = common.RegionParts{
+			Country:  "",
+			Province: "",
+			City:     "",
+			Isp:      "",
 		}
 	}
 
@@ -114,8 +112,8 @@ func parseUserAgent(ua string) (os string, browser string, version string) {
 	return
 }
 
-// getRealIP 获取客户端真实IP，处理代理情况
-func getRealIP(c *gin.Context) string {
+// GetRealIP 获取客户端真实IP，处理代理情况
+func GetRealIP(c *gin.Context) string {
 	// 优先从X-Real-IP头获取
 	if ip := c.GetHeader("X-Real-IP"); ip != "" {
 		return ip

@@ -11,6 +11,7 @@ import (
 	"github.com/xrcuo/xrcuo-api/plugin/api_key"
 	"github.com/xrcuo/xrcuo-api/plugin/client"
 	"github.com/xrcuo/xrcuo-api/plugin/ip"
+	"github.com/xrcuo/xrcuo-api/plugin/ipify"
 	"github.com/xrcuo/xrcuo-api/plugin/ping"
 	"github.com/xrcuo/xrcuo-api/plugin/random"
 )
@@ -94,6 +95,7 @@ func registerRoutes(r *gin.Engine) {
 		ping.RegisterRouter(apiGroup)   // 启用Ping插件
 		random.RegisterRouter(apiGroup) // 启用随机图片插件
 		client.RegisterRouter(apiGroup) // 启用客户端信息插件
+		ipify.RegisterRouter(apiGroup)  // 启用IP获取插件
 		// 后续新增插件，只需在这里添加注册语句即可
 	}
 
