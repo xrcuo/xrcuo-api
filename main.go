@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"html/template"
 
 	"github.com/gin-gonic/gin"
@@ -57,11 +58,11 @@ func setupGin() *gin.Engine {
 func setupTemplates(r *gin.Engine) {
 	// 设置模板自定义函数
 	r.SetFuncMap(template.FuncMap{
-		"percentage": func(total, count int64) int {
+		"percentage": func(total, count int64) string {
 			if total == 0 {
-				return 0
+				return "0%"
 			}
-			return int((float64(count) / float64(total)) * 100)
+			return fmt.Sprintf("%d%%", int((float64(count)/float64(total))*100))
 		},
 	})
 
