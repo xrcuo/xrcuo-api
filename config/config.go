@@ -8,6 +8,7 @@ import (
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -152,7 +153,15 @@ func setLogLevel() {
 			return
 		}
 
-		// 配置日志文件输出
+		// 配置日志文件输出，使用 lumberjack 处理日志滚动
+		logrus.SetOutput(&lumberjack.Logger{
+			Filename:   Conf.Log.File,
+			MaxSize:    Conf.Log.MaxSize,
+			MaxBackups: Conf.Log.MaxBackups,
+			MaxAge:     Conf.Log.MaxAge,
+		})
+
+		// 配置日志文件输出到文件
 		logrus.AddHook(lfshook.NewHook(
 			lfshook.PathMap{
 				logrus.InfoLevel:  Conf.Log.File,

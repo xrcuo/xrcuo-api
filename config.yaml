@@ -18,4 +18,4 @@ log:
 # 随机图片配置
 random_image:
   local_enabled: true  # 是否启用本地图片
-  local_path: "images/"  # 本地图片目录路径
+  local_path: "D:/d/dm"  # 本地图片目录路径
