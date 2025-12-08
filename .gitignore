@@ -2,3 +2,15 @@ stats.db
 *.log
 temp/   
 config.yaml
+ip2region_v4.xdb
+images/
+logs/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+.vscode/
+.idea/
+go.work
+go.work.sum
