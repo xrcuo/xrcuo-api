@@ -124,11 +124,30 @@ func createTables() error {
 		return fmt.Errorf("创建call_details表失败: %v", err)
 	}
 
+	// 创建API密钥表
+	apiKeyTableSQL := `
+	CREATE TABLE IF NOT EXISTS api_keys (
+		id INTEGER PRIMARY KEY AUTOINCREMENT,
+		key TEXT NOT NULL UNIQUE,
+		name TEXT NOT NULL,
+		max_usage INTEGER NOT NULL DEFAULT 0,
+		current_usage INTEGER NOT NULL DEFAULT 0,
+		is_permanent BOOLEAN NOT NULL DEFAULT 0,
+		created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+		updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+	);
+	`
+
+	if _, err := DB.Exec(apiKeyTableSQL); err != nil {
+		return fmt.Errorf("创建api_keys表失败: %v", err)
+	}
+
 	// 创建索引以提高查询性能
 	indexSQLs := []string{
 		"CREATE INDEX IF NOT EXISTS idx_call_details_timestamp ON call_details(timestamp DESC);",
 		"CREATE INDEX IF NOT EXISTS idx_call_details_path ON call_details(path);",
 		"CREATE INDEX IF NOT EXISTS idx_call_details_method ON call_details(method);",
+		"CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);",
 	}
 
 	for _, sql := range indexSQLs {

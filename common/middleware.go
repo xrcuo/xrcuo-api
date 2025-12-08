@@ -1,10 +1,12 @@
 package common
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/xrcuo/xrcuo-api/db"
 )
 
 // RequestLoggerMiddleware 请求日志中间件
@@ -52,6 +54,60 @@ func CORSMiddleware() gin.HandlerFunc {
 			return
 		}
 		
+		c.Next()
+	}
+}
+
+// APIKeyMiddleware API密钥验证中间件
+func APIKeyMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 从请求头或查询参数中获取API密钥
+		apiKey := c.GetHeader("Authorization")
+		if apiKey == "" {
+			apiKey = c.Query("api_key")
+		}
+
+		// 检查API密钥是否存在
+		if apiKey == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "API密钥不能为空",
+			})
+			c.Abort()
+			return
+		}
+
+		// 验证API密钥
+		keyInfo, err := db.GetAPIKeyByKey(apiKey)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{
+				"error": "无效的API密钥",
+			})
+			c.Abort()
+			return
+		}
+
+		// 检查API密钥是否已达到使用上限
+		if !keyInfo.IsPermanent && keyInfo.CurrentUsage >= keyInfo.MaxUsage {
+			c.JSON(http.StatusForbidden, gin.H{
+				"error": "API密钥已达到使用上限",
+			})
+			c.Abort()
+			return
+		}
+
+		// 更新API密钥使用次数
+		if err := db.UpdateAPIKeyUsage(apiKey); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "更新API密钥使用次数失败",
+			})
+			c.Abort()
+			return
+		}
+
+		// 将API密钥信息存储到上下文
+		c.Set("api_key", keyInfo)
+
+		// 继续处理请求
 		c.Next()
 	}
 }

@@ -28,3 +28,8 @@ func StatsHandler(c *gin.Context) {
 		"Funcs": templateFuncs,
 	})
 }
+
+// APIKeyHandler 处理API密钥管理页面
+func APIKeyHandler(c *gin.Context) {
+	c.HTML(http.StatusOK, "api_key.html", gin.H{})
+}
