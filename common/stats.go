@@ -13,6 +13,12 @@ import (
 type Stats struct {
 	models.Stats
 	mu sync.RWMutex // 读写锁，保证并发安全
+
+	// 调用详情缓冲区，用于批量写入数据库
+	callDetailBuffer []*models.CallDetail
+	bufferMutex      sync.Mutex // 缓冲区互斥锁
+	bufferSize       int        // 缓冲区大小
+	maxBufferSize    int        // 最大缓冲区大小
 }
 
 // 全局统计实例
@@ -41,7 +47,9 @@ func InitStats() {
 
 	// 创建并初始化统计实例
 	stats := &Stats{
-		Stats: *statsData,
+		Stats:            *statsData,
+		callDetailBuffer: make([]*models.CallDetail, 0, 100), // 初始化缓冲区，容量100
+		maxBufferSize:    100,                                // 最大缓冲区大小
 	}
 
 	// 设置全局统计实例
@@ -97,12 +105,40 @@ func (s *Stats) RecordCall(path, method, ip string, statusCode int) {
 	}
 	s.LastCallDetails = append(s.LastCallDetails, detail)
 
-	// 异步保存调用详情到数据库
-	go func() {
-		if err := db.SaveCallDetail(detail); err != nil {
-			log.Printf("保存调用详情到数据库失败: %v", err)
-		}
-	}()
+	// 将调用详情添加到缓冲区
+	s.bufferMutex.Lock()
+	s.callDetailBuffer = append(s.callDetailBuffer, detail)
+	bufferSize := len(s.callDetailBuffer)
+	s.bufferMutex.Unlock()
+
+	// 当缓冲区达到最大大小时，异步批量写入数据库
+	if bufferSize >= s.maxBufferSize {
+		go s.flushCallDetailBuffer()
+	}
+}
+
+// flushCallDetailBuffer 将缓冲区中的调用详情批量写入数据库
+func (s *Stats) flushCallDetailBuffer() {
+	s.bufferMutex.Lock()
+
+	// 如果缓冲区为空，直接返回
+	if len(s.callDetailBuffer) == 0 {
+		s.bufferMutex.Unlock()
+		return
+	}
+
+	// 将缓冲区中的数据复制到临时变量
+	details := make([]*models.CallDetail, len(s.callDetailBuffer))
+	copy(details, s.callDetailBuffer)
+
+	// 清空缓冲区
+	s.callDetailBuffer = s.callDetailBuffer[:0]
+	s.bufferMutex.Unlock()
+
+	// 批量写入数据库
+	if err := db.SaveCallDetailsBatch(details); err != nil {
+		log.Printf("批量保存调用详情到数据库失败: %v", err)
+	}
 }
 
 // SaveStats 保存统计信息到数据库
@@ -114,7 +150,15 @@ func (s *Stats) SaveStats() error {
 	statsCopy := s.GetStats()
 
 	// 保存到数据库
-	return db.SaveStats(statsCopy)
+	err := db.SaveStats(statsCopy)
+	if err != nil {
+		return err
+	}
+
+	// 同时将缓冲区中的调用详情写入数据库
+	s.flushCallDetailBuffer()
+
+	return nil
 }
 
 // startPeriodicSave 启动定时保存任务

@@ -9,6 +9,7 @@ import (
 	"github.com/xrcuo/xrcuo-api/common"
 	"github.com/xrcuo/xrcuo-api/config"
 	"github.com/xrcuo/xrcuo-api/db"
+	"github.com/xrcuo/xrcuo-api/plugin"
 	"github.com/xrcuo/xrcuo-api/plugin/api_key"
 	"github.com/xrcuo/xrcuo-api/plugin/client"
 	"github.com/xrcuo/xrcuo-api/plugin/ip"
@@ -38,8 +39,8 @@ func initApp() {
 
 // 设置Gin引擎和中间件
 func setupGin() *gin.Engine {
-	// 设置Gin模式（生产环境改为gin.ReleaseMode）
-	gin.SetMode(gin.DebugMode)
+	// 设置Gin模式
+	gin.SetMode(config.GetServerMode())
 
 	// 创建Gin引擎实例
 	r := gin.Default()
@@ -50,6 +51,7 @@ func setupGin() *gin.Engine {
 	// 添加全局中间件
 	r.Use(common.RequestLoggerMiddleware()) // 请求日志中间件
 	r.Use(common.CORSMiddleware())          // 跨域中间件
+	r.Use(common.RateLimitMiddleware())     // 速率限制中间件
 
 	return r
 }
@@ -84,6 +86,17 @@ func setupStaticFiles(r *gin.Engine) {
 
 // 注册路由
 func registerRoutes(r *gin.Engine) {
+	// 创建插件管理器
+	pluginManager := plugin.NewPluginManager()
+	
+	// 注册各个插件
+	pluginManager.Register(ip.IPPlugin)
+	pluginManager.Register(ping.PingPlugin)
+	pluginManager.Register(random.RandomPlugin)
+	pluginManager.Register(client.ClientPlugin)
+	pluginManager.Register(ipify.IpifyPlugin)
+	// 后续新增插件，只需在这里添加注册语句即可
+	
 	// 注册API根路由（所有插件路由都挂载在/api下）
 	apiGroup := r.Group("/api")
 	{
@@ -91,13 +104,8 @@ func registerRoutes(r *gin.Engine) {
 		apiGroup.Use(common.StatsMiddleware())
 		// 为所有API注册API密钥验证中间件
 		apiGroup.Use(common.APIKeyMiddleware())
-		// 注册各个插件的路由（插件化核心：按需启用/禁用）
-		ip.RegisterRouter(apiGroup)     // 启用IP插件
-		ping.RegisterRouter(apiGroup)   // 启用Ping插件
-		random.RegisterRouter(apiGroup) // 启用随机图片插件
-		client.RegisterRouter(apiGroup) // 启用客户端信息插件
-		ipify.RegisterRouter(apiGroup)  // 启用IP获取插件
-		// 后续新增插件，只需在这里添加注册语句即可
+		// 使用插件管理器注册所有插件路由
+		pluginManager.RegisterAll(apiGroup)
 	}
 
 	// 注册API密钥管理路由（不需要API密钥验证）

@@ -173,22 +173,56 @@ func SaveStats(stats *models.Stats) error {
 
 // SaveCallDetail 保存API调用详情到数据库
 func SaveCallDetail(detail *models.CallDetail) error {
-	_, err := DB.Exec(
-		"INSERT INTO call_details (path, method, ip, timestamp, status_code) VALUES (?, ?, ?, ?, ?)",
-		detail.Path, detail.Method, detail.IP, detail.Timestamp, detail.StatusCode,
-	)
-	if err != nil {
-		return fmt.Errorf("保存调用详情失败: %v", err)
+	return SaveCallDetailsBatch([]*models.CallDetail{detail})
+}
+
+// SaveCallDetailsBatch 批量保存API调用详情到数据库
+func SaveCallDetailsBatch(details []*models.CallDetail) error {
+	if len(details) == 0 {
+		return nil
 	}
 
-	// 保留最近1000条记录，删除旧记录
-	_, err = DB.Exec(
-		"DELETE FROM call_details WHERE id NOT IN (SELECT id FROM call_details ORDER BY timestamp DESC LIMIT 1000)",
-	)
+	// 开启事务
+	tx, err := DB.Begin()
 	if err != nil {
-		log.Printf("清理旧调用记录失败: %v", err)
-		// 不影响主流程，继续执行
+		return fmt.Errorf("开启事务失败: %v", err)
 	}
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
+
+	// 准备插入语句
+	stmt, err := tx.Prepare("INSERT INTO call_details (path, method, ip, timestamp, status_code) VALUES (?, ?, ?, ?, ?)")
+	if err != nil {
+		return fmt.Errorf("准备插入语句失败: %v", err)
+	}
+	defer stmt.Close()
+
+	// 批量插入数据
+	for _, detail := range details {
+		_, err = stmt.Exec(detail.Path, detail.Method, detail.IP, detail.Timestamp, detail.StatusCode)
+		if err != nil {
+			return fmt.Errorf("插入调用详情失败: %v", err)
+		}
+	}
+
+	// 提交事务
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("提交事务失败: %v", err)
+	}
+
+	// 保留最近1000条记录，删除旧记录（异步执行，不阻塞主流程）
+	go func() {
+		_, err := DB.Exec(
+			"DELETE FROM call_details WHERE id NOT IN (SELECT id FROM call_details ORDER BY timestamp DESC LIMIT 1000)",
+		)
+		if err != nil {
+			log.Printf("清理旧调用记录失败: %v", err)
+			// 不影响主流程，继续执行
+		}
+	}()
 
 	return nil
 }

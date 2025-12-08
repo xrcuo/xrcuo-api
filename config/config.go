@@ -18,7 +18,14 @@ var defConfig string
 type Config struct {
 	Server struct {
 		Port string `yaml:"port"`
+		Mode string `yaml:"mode"` // Gin运行模式（debug, release, test）
 	} `yaml:"server"`
+
+	Database struct {
+		Path         string `yaml:"path"`           // SQLite数据库文件路径
+		MaxOpenConns int    `yaml:"max_open_conns"` // 最大打开连接数
+		MaxIdleConns int    `yaml:"max_idle_conns"` // 最大空闲连接数
+	} `yaml:"database"`
 
 	IP2Region struct {
 		DBPath    string `yaml:"db_path"`
@@ -87,8 +94,69 @@ func Parse() {
 		logrus.Fatal("解析 config.yaml 失败，请检查格式、内容是否输入正确")
 	}
 
+	// 验证配置
+	validateConfig()
+
 	// 应用日志级别配置
 	setLogLevel()
+}
+
+// validateConfig 验证配置的有效性
+func validateConfig() {
+	// 验证Gin运行模式
+	validModes := map[string]bool{
+		"debug":   true,
+		"release": true,
+		"test":    true,
+	}
+	if !validModes[Conf.Server.Mode] {
+		logrus.Warnf("无效的Gin模式: %s, 使用默认模式: debug", Conf.Server.Mode)
+		Conf.Server.Mode = "debug"
+	}
+
+	// 验证IP版本
+	validIPVersions := map[string]bool{
+		"ipv4": true,
+		"ipv6": true,
+	}
+	if !validIPVersions[Conf.IP2Region.IPVersion] {
+		logrus.Warnf("无效的IP版本: %s, 使用默认版本: ipv4", Conf.IP2Region.IPVersion)
+		Conf.IP2Region.IPVersion = "ipv4"
+	}
+
+	// 验证日志级别
+	validLogLevels := map[string]bool{
+		"debug": true,
+		"info":  true,
+		"warn":  true,
+		"error": true,
+		"fatal": true,
+		"panic": true,
+	}
+	if !validLogLevels[Conf.Log.Level] {
+		logrus.Warnf("无效的日志级别: %s, 使用默认级别: info", Conf.Log.Level)
+		Conf.Log.Level = "info"
+	}
+
+	// 验证日志文件大小
+	if Conf.Log.MaxSize <= 0 {
+		logrus.Warnf("无效的日志文件大小: %d, 使用默认值: 10 MB", Conf.Log.MaxSize)
+		Conf.Log.MaxSize = 10
+	}
+
+	// 验证日志文件保留数量
+	if Conf.Log.MaxBackups <= 0 {
+		logrus.Warnf("无效的日志文件保留数量: %d, 使用默认值: 5", Conf.Log.MaxBackups)
+		Conf.Log.MaxBackups = 5
+	}
+
+	// 验证日志文件保留天数
+	if Conf.Log.MaxAge <= 0 {
+		logrus.Warnf("无效的日志文件保留天数: %d, 使用默认值: 7", Conf.Log.MaxAge)
+		Conf.Log.MaxAge = 7
+	}
+
+	logrus.Debug("配置验证完成")
 }
 
 // GetServerPort 获取服务器端口
@@ -97,6 +165,38 @@ func GetServerPort() string {
 		return ":8080"
 	}
 	return Conf.Server.Port
+}
+
+// GetServerMode 获取Gin运行模式
+func GetServerMode() string {
+	if Conf == nil || Conf.Server.Mode == "" {
+		return "debug"
+	}
+	return Conf.Server.Mode
+}
+
+// GetDatabasePath 获取数据库文件路径
+func GetDatabasePath() string {
+	if Conf == nil || Conf.Database.Path == "" {
+		return "./stats.db"
+	}
+	return Conf.Database.Path
+}
+
+// GetMaxOpenConns 获取最大打开连接数
+func GetMaxOpenConns() int {
+	if Conf == nil || Conf.Database.MaxOpenConns <= 0 {
+		return 10
+	}
+	return Conf.Database.MaxOpenConns
+}
+
+// GetMaxIdleConns 获取最大空闲连接数
+func GetMaxIdleConns() int {
+	if Conf == nil || Conf.Database.MaxIdleConns <= 0 {
+		return 5
+	}
+	return Conf.Database.MaxIdleConns
 }
 
 // GetIP2RegionDBPath 获取IP2Region数据库路径

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/sirupsen/logrus"
+	"github.com/xrcuo/xrcuo-api/config"
 	_ "modernc.org/sqlite"
 )
 
@@ -14,15 +15,18 @@ var DB *sql.DB
 func InitDB() error {
 	var err error
 	
+	// 获取配置的数据库路径
+	dbPath := config.GetDatabasePath()
+	
 	// 创建或打开SQLite数据库文件
-	DB, err = sql.Open("sqlite", "./stats.db")
+	DB, err = sql.Open("sqlite", dbPath)
 	if err != nil {
 		return fmt.Errorf("打开数据库失败: %v", err)
 	}
 	
 	// 配置连接池
-	DB.SetMaxOpenConns(10)           // 最大打开连接数
-	DB.SetMaxIdleConns(5)            // 最大空闲连接数
+	DB.SetMaxOpenConns(config.GetMaxOpenConns())           // 最大打开连接数
+	DB.SetMaxIdleConns(config.GetMaxIdleConns())            // 最大空闲连接数
 	DB.SetConnMaxLifetime(-1)        // 连接最大生命周期（-1表示无限制）
 	
 	logrus.Debug("数据库连接池配置完成")
