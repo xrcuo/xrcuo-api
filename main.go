@@ -9,6 +9,7 @@ import (
 	"github.com/xrcuo/xrcuo-api/config"
 	"github.com/xrcuo/xrcuo-api/db"
 	"github.com/xrcuo/xrcuo-api/plugin/api_key"
+	"github.com/xrcuo/xrcuo-api/plugin/client"
 	"github.com/xrcuo/xrcuo-api/plugin/ip"
 	"github.com/xrcuo/xrcuo-api/plugin/ping"
 	"github.com/xrcuo/xrcuo-api/plugin/random"
@@ -40,6 +41,9 @@ func setupGin() *gin.Engine {
 
 	// 创建Gin引擎实例
 	r := gin.Default()
+
+	// 信任所有代理，确保能正确获取客户端真实IP
+	r.SetTrustedProxies(nil)
 
 	// 添加全局中间件
 	r.Use(common.RequestLoggerMiddleware()) // 请求日志中间件
@@ -89,6 +93,7 @@ func registerRoutes(r *gin.Engine) {
 		ip.RegisterRouter(apiGroup)     // 启用IP插件
 		ping.RegisterRouter(apiGroup)   // 启用Ping插件
 		random.RegisterRouter(apiGroup) // 启用随机图片插件
+		client.RegisterRouter(apiGroup) // 启用客户端信息插件
 		// 后续新增插件，只需在这里添加注册语句即可
 	}
 
