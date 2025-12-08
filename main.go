@@ -10,6 +10,7 @@ import (
 	"github.com/xrcuo/xrcuo-api/db"
 	"github.com/xrcuo/xrcuo-api/plugin/ip"
 	"github.com/xrcuo/xrcuo-api/plugin/ping"
+	"github.com/xrcuo/xrcuo-api/plugin/random"
 )
 
 func main() {
@@ -54,6 +55,9 @@ func main() {
 	})
 	r.LoadHTMLGlob("templates/*")
 
+	// 添加静态文件服务，用于提供本地图片
+	r.Static("/images", "./images")
+
 	// 3. 注册API根路由（所有插件路由都挂载在/api下）
 	apiGroup := r.Group("/api")
 	{
@@ -62,6 +66,7 @@ func main() {
 		// 注册各个插件的路由（插件化核心：按需启用/禁用）
 		ip.RegisterRouter(apiGroup)   // 启用IP插件
 		ping.RegisterRouter(apiGroup) // 启用Ping插件
+		random.RegisterRouter(apiGroup) // 启用随机图片插件
 		// 后续新增插件，只需在这里添加注册语句即可
 	}
 

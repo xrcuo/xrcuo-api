@@ -32,6 +32,11 @@ type Config struct {
 		MaxBackups int    `yaml:"max_backups"` // 保留的日志文件数量
 		MaxAge     int    `yaml:"max_age"`     // 日志文件保留天数
 	} `yaml:"log"`
+
+	RandomImage struct {
+		LocalEnabled bool   `yaml:"local_enabled"` // 是否启用本地图片
+		LocalPath    string `yaml:"local_path"`    // 本地图片目录路径
+	} `yaml:"random_image"`
 }
 
 var Conf *Config
