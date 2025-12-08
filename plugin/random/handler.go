@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/xrcuo/xrcuo-api/common"
 	"github.com/xrcuo/xrcuo-api/config"
 )
 
@@ -95,7 +96,7 @@ func getLocalImages() ([]string, error) {
 func GetRandomImageHandler(c *gin.Context) {
 	// 获取本地图片列表
 	images, err := getLocalImages()
-	
+
 	// 优先使用本地图片（如果启用且有图片）
 	if len(images) > 0 && err == nil {
 		// 随机选择一张本地图片
@@ -126,7 +127,7 @@ func GetRandomImageHandler(c *gin.Context) {
 func GetRandomImageInfoHandler(c *gin.Context) {
 	// 获取本地图片列表
 	images, err := getLocalImages()
-	
+
 	// 优先使用本地图片（如果启用且有图片）
 	if len(images) > 0 && err == nil {
 		// 随机选择一张本地图片
@@ -134,7 +135,7 @@ func GetRandomImageInfoHandler(c *gin.Context) {
 		imagePath := images[index]
 
 		// 返回本地图片信息
-		c.JSON(http.StatusOK, ImageResponse{
+		common.JSONResponse(c, http.StatusOK, ImageResponse{
 			URL:      "/images/" + imagePath, // 本地图片的访问路径
 			Provider: "local",
 		})
@@ -155,7 +156,7 @@ func GetRandomImageInfoHandler(c *gin.Context) {
 	}
 
 	// 返回远程图片信息
-	c.JSON(http.StatusOK, ImageResponse{
+	common.JSONResponse(c, http.StatusOK, ImageResponse{
 		URL:      imageURL,
 		Provider: provider,
 	})

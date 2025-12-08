@@ -17,8 +17,11 @@ var defConfig string
 // Config 应用程序配置结构体
 type Config struct {
 	Server struct {
-		Port string `yaml:"port"`
-		Mode string `yaml:"mode"` // Gin运行模式（debug, release, test）
+		Port       string `yaml:"port"`
+		Mode       string `yaml:"mode"` // Gin运行模式（debug, release, test）
+		JSONFormat struct {
+			Enabled bool `yaml:"enabled"` // 是否启用格式化JSON响应
+		} `yaml:"json_format"`
 	} `yaml:"server"`
 
 	Database struct {
@@ -173,6 +176,14 @@ func GetServerMode() string {
 		return "debug"
 	}
 	return Conf.Server.Mode
+}
+
+// IsJSONFormatEnabled 获取是否启用JSON格式化
+func IsJSONFormatEnabled() bool {
+	if Conf == nil {
+		return false
+	}
+	return Conf.Server.JSONFormat.Enabled
 }
 
 // GetDatabasePath 获取数据库文件路径

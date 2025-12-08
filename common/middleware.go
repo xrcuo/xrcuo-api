@@ -151,9 +151,7 @@ func APIKeyMiddleware() gin.HandlerFunc {
 
 		// 检查API密钥是否存在
 		if apiKey == "" {
-			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "API密钥不能为空",
-			})
+			ErrorResponse(c, http.StatusUnauthorized, 401, "API密钥不能为空")
 			c.Abort()
 			return
 		}
@@ -165,9 +163,7 @@ func APIKeyMiddleware() gin.HandlerFunc {
 			// 从数据库获取
 			keyInfo, err = db.GetAPIKeyByKey(apiKey)
 			if err != nil {
-				c.JSON(http.StatusUnauthorized, gin.H{
-					"error": "无效的API密钥",
-				})
+				ErrorResponse(c, http.StatusUnauthorized, 401, "无效的API密钥")
 				c.Abort()
 				return
 			}
@@ -177,18 +173,14 @@ func APIKeyMiddleware() gin.HandlerFunc {
 
 		// 检查API密钥是否已达到使用上限
 		if !keyInfo.IsPermanent && keyInfo.CurrentUsage >= keyInfo.MaxUsage {
-			c.JSON(http.StatusForbidden, gin.H{
-				"error": "API密钥已达到使用上限",
-			})
+			ErrorResponse(c, http.StatusForbidden, 403, "API密钥已达到使用上限")
 			c.Abort()
 			return
 		}
 
 		// 更新API密钥使用次数
 		if err := db.UpdateAPIKeyUsage(apiKey); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "更新API密钥使用次数失败",
-			})
+			ErrorResponse(c, http.StatusInternalServerError, 500, "更新API密钥使用次数失败")
 			c.Abort()
 			return
 		}
@@ -290,9 +282,7 @@ func RateLimitMiddleware() gin.HandlerFunc {
 
 		// 检查是否允许请求
 		if !globalRateLimiter.Allow(clientIP) {
-			c.JSON(http.StatusTooManyRequests, gin.H{
-				"error": "请求过于频繁，请稍后再试",
-			})
+			ErrorResponse(c, http.StatusTooManyRequests, 429, "请求过于频繁，请稍后再试")
 			c.Abort()
 			return
 		}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/xrcuo/xrcuo-api/common"
 	"github.com/xrcuo/xrcuo-api/db"
 )
 
@@ -15,14 +16,14 @@ func GetAPIKeysHandler(c *gin.Context) {
 	apiKeys, err := db.GetAllAPIKeys()
 	if err != nil {
 		logrus.Errorf("获取API密钥列表失败: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
+		common.JSONResponse(c, http.StatusInternalServerError, gin.H{
 			"error": "获取API密钥列表失败",
 		})
 		return
 	}
 
 	// 返回API密钥列表
-	c.JSON(http.StatusOK, gin.H{
+	common.JSONResponse(c, http.StatusOK, gin.H{
 		"api_keys": apiKeys,
 	})
 }
@@ -31,13 +32,13 @@ func GetAPIKeysHandler(c *gin.Context) {
 func CreateAPIKeyHandler(c *gin.Context) {
 	// 从请求体中获取参数
 	var req struct {
-		Name         string `json:"name" binding:"required"`
-		MaxUsage     int64  `json:"max_usage"`
-		IsPermanent  bool   `json:"is_permanent"`
+		Name        string `json:"name" binding:"required"`
+		MaxUsage    int64  `json:"max_usage"`
+		IsPermanent bool   `json:"is_permanent"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
+		common.JSONResponse(c, http.StatusBadRequest, gin.H{
 			"error": "请求参数无效",
 		})
 		return
@@ -47,16 +48,14 @@ func CreateAPIKeyHandler(c *gin.Context) {
 	apiKey, err := db.CreateAPIKey(req.Name, req.MaxUsage, req.IsPermanent)
 	if err != nil {
 		logrus.Errorf("创建API密钥失败: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
+		common.JSONResponse(c, http.StatusInternalServerError, gin.H{
 			"error": "创建API密钥失败",
 		})
 		return
 	}
 
-	// 返回新创建的API密钥
-	c.JSON(http.StatusOK, gin.H{
-		"api_key": apiKey,
-	})
+	// 返回创建的API密钥
+	common.JSONResponse(c, http.StatusCreated, apiKey)
 }
 
 // DeleteAPIKeyHandler 删除API密钥
@@ -65,8 +64,8 @@ func DeleteAPIKeyHandler(c *gin.Context) {
 	idStr := c.Param("id")
 	id, err := strconv.ParseInt(idStr, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "无效的API密钥ID",
+		common.JSONResponse(c, http.StatusBadRequest, gin.H{
+			"error": "无效的ID参数",
 		})
 		return
 	}
@@ -74,14 +73,14 @@ func DeleteAPIKeyHandler(c *gin.Context) {
 	// 删除API密钥
 	if err := db.DeleteAPIKey(id); err != nil {
 		logrus.Errorf("删除API密钥失败: %v", err)
-		c.JSON(http.StatusInternalServerError, gin.H{
+		common.JSONResponse(c, http.StatusInternalServerError, gin.H{
 			"error": "删除API密钥失败",
 		})
 		return
 	}
 
-	// 返回成功响应
-	c.JSON(http.StatusOK, gin.H{
+	// 返回删除成功
+	common.JSONResponse(c, http.StatusOK, gin.H{
 		"message": "API密钥删除成功",
 	})
 }

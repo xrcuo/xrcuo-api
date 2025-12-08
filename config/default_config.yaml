@@ -2,6 +2,8 @@
 server:
   port: ":8080"  # 服务监听端口
   mode: "debug"  # Gin运行模式（debug, release, test）
+  json_format:
+    enabled: false  # 是否启用格式化JSON响应（默认关闭）
 
 # IP2Region配置
 ip2region:

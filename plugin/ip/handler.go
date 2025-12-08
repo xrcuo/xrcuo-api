@@ -9,7 +9,7 @@ import (
 	"github.com/xrcuo/xrcuo-api/common"
 )
 
-// SearchRegionHandler IP地区查询处理函数
+// // SearchRegionHandler IP地区查询处理函数
 func SearchRegionHandler(c *gin.Context) {
 	startTime := time.Now()
 	response := &Response{Code: 200, Msg: "请求成功"}
@@ -17,7 +17,7 @@ func SearchRegionHandler(c *gin.Context) {
 	// 统一响应出口（确保took字段必赋值）
 	defer func() {
 		response.Took = time.Since(startTime).String()
-		c.JSON(http.StatusOK, response)
+		common.JSONResponse(c, http.StatusOK, response)
 	}()
 
 	// 1. 获取并校验IP参数

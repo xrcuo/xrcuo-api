@@ -19,9 +19,8 @@ func GetClientInfoHandler(c *gin.Context) {
 	// 统一响应出口（确保took字段必赋值）
 	defer func() {
 		response.Took = time.Since(startTime).String()
-		c.JSON(http.StatusOK, response)
+		common.JSONResponse(c, http.StatusOK, response)
 	}()
-
 	// 1. 获取客户端真实IP
 	clientIP := GetRealIP(c)
 
