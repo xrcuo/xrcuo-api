@@ -17,7 +17,6 @@ type Stats struct {
 	// 调用详情缓冲区，用于批量写入数据库
 	callDetailBuffer []*models.CallDetail
 	bufferMutex      sync.Mutex // 缓冲区互斥锁
-	bufferSize       int        // 缓冲区大小
 	maxBufferSize    int        // 最大缓冲区大小
 }
 

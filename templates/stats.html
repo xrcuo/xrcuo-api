@@ -75,19 +75,32 @@
 
         <div class="detail-section">
             <h2 class="section-title"><i class="fa fa-code"></i> 按API路径统计</h2>
+gg            <div class="chart-container">
+                <canvas id="path-stats-chart" height="300"></canvas>
+            </div>
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover" id="path-stats-table">
                     <thead>
                         <tr>
                             <th>API路径</th>
-                            <th>调用次数</th>
+                            <th class="sortable" data-sort="count">
+                                <i class="fa fa-sort"></i> 调用次数
+                            </th>
+                            <th>百分比</th>
+                            <th>占比</th>
                         </tr>
                     </thead>
                     <tbody>
                         {{range $path, $count := .Stats.PathCalls}}
                             <tr>
                                 <td>{{$path}}</td>
-                                <td>{{$count}}</td>
+                                <td class="count-column">{{$count}}</td>
+                                <td>{{percentage $.Stats.TotalCalls $count}}%</td>
+                                <td>
+                                    <div class="progress path-progress">
+                                        <div class="progress-bar" role="progressbar" style="width: {{percentage $.Stats.TotalCalls $count}}%;" aria-valuenow="{{percentage $.Stats.TotalCalls $count}}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </td>
                             </tr>
                         {{end}}
                     </tbody>
@@ -141,6 +154,7 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="/static/js/stats.js"></script>
 </body>
 </html>

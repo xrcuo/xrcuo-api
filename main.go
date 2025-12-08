@@ -138,6 +138,8 @@ func registerRoutes(r *gin.Engine) {
 
 	// 添加统计信息展示页面路由
 	r.GET("/stats", common.StatsHandler)
+	// 添加统计信息API路由，返回JSON格式数据
+	r.GET("/api/stats", common.StatsAPIHandler)
 	// 添加API密钥管理页面路由
 	r.GET("/api_key", common.APIKeyHandler)
 }

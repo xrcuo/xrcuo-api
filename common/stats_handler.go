@@ -29,6 +29,15 @@ func StatsHandler(c *gin.Context) {
 	})
 }
 
+// StatsAPIHandler 处理统计信息API请求，返回JSON格式数据
+func StatsAPIHandler(c *gin.Context) {
+	// 获取统计信息
+	stats := GlobalStats.GetStats()
+	
+	// 返回JSON格式数据
+	c.JSON(http.StatusOK, stats)
+}
+
 // APIKeyHandler 处理API密钥管理页面
 func APIKeyHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "api_key.html", gin.H{})
