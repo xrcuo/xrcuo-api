@@ -20,12 +20,17 @@ var GlobalStats *Stats
 
 // InitStats 初始化统计信息
 func InitStats() {
+	log.Println("初始化统计信息...")
+
 	// 从数据库加载统计数据
 	statsData, err := db.LoadStats()
 	if err != nil {
 		log.Printf("从数据库加载统计数据失败: %v，使用默认值", err)
-		// 使用默认值
+		// 使用默认值初始化统计数据
 		statsData = &models.Stats{
+			TotalCalls:      0,
+			DailyCalls:      0,
+			HourlyCalls:     0,
 			MethodCalls:     make(map[string]int64),
 			PathCalls:       make(map[string]int64),
 			IPCalls:         make(map[string]int64),
@@ -34,11 +39,15 @@ func InitStats() {
 		}
 	}
 
+	// 创建并初始化统计实例
 	stats := &Stats{
 		Stats: *statsData,
 	}
 
+	// 设置全局统计实例
 	GlobalStats = stats
+
+	log.Println("统计信息初始化完成")
 
 	// 启动定时保存任务（每30秒保存一次统计数据）
 	go startPeriodicSave()
@@ -110,10 +119,25 @@ func (s *Stats) SaveStats() error {
 
 // startPeriodicSave 启动定时保存任务
 func startPeriodicSave() {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
+	// 使用配置的保存间隔，默认30秒
+	interval := 30 * time.Second
+
+	log.Printf("启动统计数据定时保存任务，保存间隔: %v", interval)
+
+	ticker := time.NewTicker(interval)
+	defer func() {
+		ticker.Stop()
+		log.Println("统计数据定时保存任务已停止")
+	}()
 
 	for range ticker.C {
+		// 检查 GlobalStats 是否为 nil
+		if GlobalStats == nil {
+			log.Println("统计数据实例未初始化，跳过保存")
+			continue
+		}
+
+		// 执行保存操作
 		if err := GlobalStats.SaveStats(); err != nil {
 			log.Printf("定时保存统计数据失败: %v", err)
 		} else {

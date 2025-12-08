@@ -168,7 +168,6 @@ func SaveStats(stats *models.Stats) error {
 		return fmt.Errorf("提交事务失败: %v", err)
 	}
 
-	log.Println("统计信息已保存到数据库")
 	return nil
 }
 

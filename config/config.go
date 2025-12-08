@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
-	"github.com/rifflock/lfshook"
 	"github.com/sirupsen/logrus"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v3"
@@ -160,21 +159,6 @@ func setLogLevel() {
 			MaxBackups: Conf.Log.MaxBackups,
 			MaxAge:     Conf.Log.MaxAge,
 		})
-
-		// 配置日志文件输出到文件
-		logrus.AddHook(lfshook.NewHook(
-			lfshook.PathMap{
-				logrus.InfoLevel:  Conf.Log.File,
-				logrus.DebugLevel: Conf.Log.File,
-				logrus.WarnLevel:  Conf.Log.File,
-				logrus.ErrorLevel: Conf.Log.File,
-				logrus.FatalLevel: Conf.Log.File,
-				logrus.PanicLevel: Conf.Log.File,
-			},
-			&logrus.TextFormatter{
-				FullTimestamp: true,
-			},
-		))
 
 		logrus.Infof("日志文件已配置: %s", Conf.Log.File)
 	}

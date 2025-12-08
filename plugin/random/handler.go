@@ -29,8 +29,30 @@ var supportedImageExtensions = map[string]bool{
 	".webp": true,
 }
 
-// 获取本地图片文件列表
+// 本地图片列表缓存
+var (
+	localImagesCache []string
+	lastCacheUpdate  time.Time
+	cacheDuration    = 5 * time.Minute // 缓存有效期5分钟
+)
+
+// 初始化随机数生成器（只初始化一次）
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+// 获取本地图片文件列表，带缓存
 func getLocalImages() ([]string, error) {
+	// 检查是否启用本地图片
+	if !config.Conf.RandomImage.LocalEnabled {
+		return nil, nil
+	}
+
+	// 检查缓存是否有效
+	if len(localImagesCache) > 0 && time.Since(lastCacheUpdate) < cacheDuration {
+		return localImagesCache, nil
+	}
+
 	localPath := config.Conf.RandomImage.LocalPath
 	var images []string
 
@@ -58,66 +80,43 @@ func getLocalImages() ([]string, error) {
 		return nil
 	})
 
-	return images, err
-}
-
-// 检查本地图片目录是否存在且有图片
-func hasLocalImages() bool {
-	if !config.Conf.RandomImage.LocalEnabled {
-		return false
-	}
-
-	images, err := getLocalImages()
 	if err != nil {
-		logrus.Warnf("获取本地图片失败: %v", err)
-		return false
+		return nil, err
 	}
 
-	return len(images) > 0
+	// 更新缓存
+	localImagesCache = images
+	lastCacheUpdate = time.Now()
+
+	return images, nil
 }
 
 // GetRandomImageHandler 获取随机图片的处理函数
 func GetRandomImageHandler(c *gin.Context) {
-	// 初始化随机数生成器
-	rand.Seed(time.Now().UnixNano())
-
+	// 获取本地图片列表
+	images, err := getLocalImages()
+	
 	// 优先使用本地图片（如果启用且有图片）
-	if hasLocalImages() {
-		images, err := getLocalImages()
-		if err == nil && len(images) > 0 {
-			// 随机选择一张本地图片
-			index := rand.Intn(len(images))
-			imagePath := images[index]
-			fullPath := filepath.Join(config.Conf.RandomImage.LocalPath, imagePath)
+	if len(images) > 0 && err == nil {
+		// 随机选择一张本地图片
+		index := rand.Intn(len(images))
+		imagePath := images[index]
+		fullPath := filepath.Join(config.Conf.RandomImage.LocalPath, imagePath)
 
-			// 记录请求日志
-			logrus.WithFields(logrus.Fields{
-				"provider":   "local_random_image",
-				"image_path": imagePath,
-				"client_ip":  c.ClientIP(),
-			}).Info("本地随机图片请求")
+		// 记录请求日志（只记录关键信息）
+		logrus.Debugf("本地随机图片请求: %s, IP: %s", imagePath, c.ClientIP())
 
-			// 返回本地图片
-			logrus.WithFields(logrus.Fields{
-				"full_path":  fullPath,
-				"local_path": config.Conf.RandomImage.LocalPath,
-				"image_path": imagePath,
-			}).Info("尝试返回本地图片")
-			c.File(fullPath)
-			return
-		}
+		// 返回本地图片
+		c.File(fullPath)
+		return
 	}
 
 	// 如果本地图片不可用，使用远程图片提供者
 	index := rand.Intn(len(imageProviders))
 	imageURL := imageProviders[index]
 
-	// 记录请求日志
-	logrus.WithFields(logrus.Fields{
-		"provider":  "random_image",
-		"image_url": imageURL,
-		"client_ip": c.ClientIP(),
-	}).Info("随机图片请求")
+	// 记录请求日志（只记录关键信息）
+	logrus.Debugf("随机图片请求: %s, IP: %s", imageURL, c.ClientIP())
 
 	// 重定向到随机图片URL
 	c.Redirect(http.StatusFound, imageURL)
@@ -125,24 +124,21 @@ func GetRandomImageHandler(c *gin.Context) {
 
 // GetRandomImageInfoHandler 获取随机图片信息的处理函数
 func GetRandomImageInfoHandler(c *gin.Context) {
-	// 初始化随机数生成器
-	rand.Seed(time.Now().UnixNano())
-
+	// 获取本地图片列表
+	images, err := getLocalImages()
+	
 	// 优先使用本地图片（如果启用且有图片）
-	if hasLocalImages() {
-		images, err := getLocalImages()
-		if err == nil && len(images) > 0 {
-			// 随机选择一张本地图片
-			index := rand.Intn(len(images))
-			imagePath := images[index]
+	if len(images) > 0 && err == nil {
+		// 随机选择一张本地图片
+		index := rand.Intn(len(images))
+		imagePath := images[index]
 
-			// 返回本地图片信息
-			c.JSON(http.StatusOK, ImageResponse{
-				URL:      "/images/" + imagePath, // 本地图片的访问路径
-				Provider: "local",
-			})
-			return
-		}
+		// 返回本地图片信息
+		c.JSON(http.StatusOK, ImageResponse{
+			URL:      "/images/" + imagePath, // 本地图片的访问路径
+			Provider: "local",
+		})
+		return
 	}
 
 	// 如果本地图片不可用，使用远程图片提供者
