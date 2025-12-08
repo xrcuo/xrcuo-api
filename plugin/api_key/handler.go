@@ -55,7 +55,9 @@ func CreateAPIKeyHandler(c *gin.Context) {
 	}
 
 	// 返回创建的API密钥
-	common.JSONResponse(c, http.StatusCreated, apiKey)
+	common.JSONResponse(c, http.StatusCreated, gin.H{
+		"api_key": apiKey,
+	})
 }
 
 // DeleteAPIKeyHandler 删除API密钥

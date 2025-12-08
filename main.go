@@ -1,8 +1,11 @@
 package main
 
 import (
+	"embed"
 	"fmt"
 	"html/template"
+	"io/fs"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -17,6 +20,10 @@ import (
 	"github.com/xrcuo/xrcuo-api/plugin/ping"
 	"github.com/xrcuo/xrcuo-api/plugin/random"
 )
+
+//go:embed static
+//go:embed templates
+var embeddedFiles embed.FS
 
 // 初始化应用
 func initApp() {
@@ -59,36 +66,50 @@ func setupGin() *gin.Engine {
 // 设置模板
 func setupTemplates(r *gin.Engine) {
 	// 设置模板自定义函数
-	r.SetFuncMap(template.FuncMap{
+	funcMap := template.FuncMap{
 		"percentage": func(total, count int64) string {
 			if total == 0 {
 				return "0%"
 			}
 			return fmt.Sprintf("%d%%", int((float64(count)/float64(total))*100))
 		},
-	})
+	}
 
-	// 加载模板文件
-	r.LoadHTMLGlob("templates/*")
+	// 从嵌入式文件系统加载模板
+	tmpls, err := template.New("").Funcs(funcMap).ParseFS(embeddedFiles, "templates/*")
+	if err != nil {
+		logrus.Fatalf("加载模板失败：%v", err)
+	}
+
+	// 设置Gin使用解析后的模板
+	r.SetHTMLTemplate(tmpls)
 }
 
 // 设置静态文件服务
 func setupStaticFiles(r *gin.Engine) {
-	// 添加静态文件服务，用于提供本地图片
+	// 添加静态文件服务，用于提供本地图片（如果需要）
 	r.Static("/images", "./images")
 
-	// 添加静态文件服务，用于提供其他静态资源
-	r.Static("/static", "./static")
+	// 从嵌入式文件系统中获取static子目录
+	staticFS, err := fs.Sub(embeddedFiles, "static")
+	if err != nil {
+		logrus.Fatalf("获取static子目录失败：%v", err)
+	}
 
-	// 直接映射favicon.ico文件
-	r.StaticFile("/favicon.ico", "./static/favicon.ico")
+	// 使用嵌入式文件系统提供静态资源
+	r.StaticFS("/static", http.FS(staticFS))
+
+	// 使用嵌入式文件系统提供favicon.ico
+	r.GET("/favicon.ico", func(c *gin.Context) {
+		c.FileFromFS("favicon.ico", http.FS(staticFS))
+	})
 }
 
 // 注册路由
 func registerRoutes(r *gin.Engine) {
 	// 创建插件管理器
 	pluginManager := plugin.NewPluginManager()
-	
+
 	// 注册各个插件
 	pluginManager.Register(ip.IPPlugin)
 	pluginManager.Register(ping.PingPlugin)
@@ -96,7 +117,7 @@ func registerRoutes(r *gin.Engine) {
 	pluginManager.Register(client.ClientPlugin)
 	pluginManager.Register(ipify.IpifyPlugin)
 	// 后续新增插件，只需在这里添加注册语句即可
-	
+
 	// 注册API根路由（所有插件路由都挂载在/api下）
 	apiGroup := r.Group("/api")
 	{
