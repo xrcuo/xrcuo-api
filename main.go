@@ -57,6 +57,10 @@ func main() {
 
 	// 添加静态文件服务，用于提供本地图片
 	r.Static("/images", "./images")
+	// 添加静态文件服务，用于提供其他静态资源
+	r.Static("/static", "./static")
+	// 直接映射favicon.ico文件
+	r.StaticFile("/favicon.ico", "./static/favicon.ico")
 
 	// 3. 注册API根路由（所有插件路由都挂载在/api下）
 	apiGroup := r.Group("/api")
@@ -64,8 +68,8 @@ func main() {
 		// 为所有API注册统计中间件
 		apiGroup.Use(common.StatsMiddleware())
 		// 注册各个插件的路由（插件化核心：按需启用/禁用）
-		ip.RegisterRouter(apiGroup)   // 启用IP插件
-		ping.RegisterRouter(apiGroup) // 启用Ping插件
+		ip.RegisterRouter(apiGroup)     // 启用IP插件
+		ping.RegisterRouter(apiGroup)   // 启用Ping插件
 		random.RegisterRouter(apiGroup) // 启用随机图片插件
 		// 后续新增插件，只需在这里添加注册语句即可
 	}

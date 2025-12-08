@@ -41,8 +41,8 @@ func LoadStats() (*models.Stats, error) {
 	for rows.Next() {
 		var method string
 		var count int64
-		if err := rows.Scan(&method, &count); err != nil {
-			return nil, fmt.Errorf("扫描HTTP方法统计失败: %v", err)
+		if scanErr := rows.Scan(&method, &count); scanErr != nil {
+			return nil, fmt.Errorf("扫描HTTP方法统计失败: %v", scanErr)
 		}
 		stats.MethodCalls[method] = count
 	}
@@ -57,8 +57,8 @@ func LoadStats() (*models.Stats, error) {
 	for rows.Next() {
 		var path string
 		var count int64
-		if err := rows.Scan(&path, &count); err != nil {
-			return nil, fmt.Errorf("扫描API路径统计失败: %v", err)
+		if scanErr := rows.Scan(&path, &count); scanErr != nil {
+			return nil, fmt.Errorf("扫描API路径统计失败: %v", scanErr)
 		}
 		stats.PathCalls[path] = count
 	}
@@ -73,8 +73,8 @@ func LoadStats() (*models.Stats, error) {
 	for rows.Next() {
 		var ip string
 		var count int64
-		if err := rows.Scan(&ip, &count); err != nil {
-			return nil, fmt.Errorf("扫描IP统计失败: %v", err)
+		if scanErr := rows.Scan(&ip, &count); scanErr != nil {
+			return nil, fmt.Errorf("扫描IP统计失败: %v", scanErr)
 		}
 		stats.IPCalls[ip] = count
 	}
@@ -91,8 +91,8 @@ func LoadStats() (*models.Stats, error) {
 	details := make([]*models.CallDetail, 0, 100)
 	for rows.Next() {
 		var detail models.CallDetail
-		if err := rows.Scan(&detail.Path, &detail.Method, &detail.IP, &detail.Timestamp, &detail.StatusCode); err != nil {
-			return nil, fmt.Errorf("扫描调用详情失败: %v", err)
+		if scanErr := rows.Scan(&detail.Path, &detail.Method, &detail.IP, &detail.Timestamp, &detail.StatusCode); scanErr != nil {
+			return nil, fmt.Errorf("扫描调用详情失败: %v", scanErr)
 		}
 		details = append(details, &detail)
 	}
