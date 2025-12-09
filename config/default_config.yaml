@@ -7,8 +7,8 @@ server:
 
 # IP2Region配置
 ip2region:
-  db_path: "./ip2region_v4.xdb"  # ip2region数据库路径
-  ip_version: "ipv4"  # IP版本（ipv4或ipv6）
+  v4_db_path: "./ip2region_v4.xdb"  # IPv4数据库路径
+  v6_db_path: "./ip2region_v6.xdb"  # IPv6数据库路径
 
 # 日志配置
 log:

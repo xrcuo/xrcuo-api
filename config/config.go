@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
 	"github.com/sirupsen/logrus"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v3"
@@ -31,8 +30,8 @@ type Config struct {
 	} `yaml:"database"`
 
 	IP2Region struct {
-		DBPath    string `yaml:"db_path"`
-		IPVersion string `yaml:"ip_version"` // ipv4 or ipv6
+		V4DBPath string `yaml:"v4_db_path"` // IPv4数据库文件路径
+		V6DBPath string `yaml:"v6_db_path"` // IPv6数据库文件路径
 	} `yaml:"ip2region"`
 
 	Log struct {
@@ -117,14 +116,16 @@ func validateConfig() {
 		Conf.Server.Mode = "debug"
 	}
 
-	// 验证IP版本
-	validIPVersions := map[string]bool{
-		"ipv4": true,
-		"ipv6": true,
-	}
-	if !validIPVersions[Conf.IP2Region.IPVersion] {
-		logrus.Warnf("无效的IP版本: %s, 使用默认版本: ipv4", Conf.IP2Region.IPVersion)
-		Conf.IP2Region.IPVersion = "ipv4"
+	// 向后兼容：处理旧版本配置
+	// 检查是否存在旧的 db_path 配置
+	if Conf.IP2Region.V4DBPath == "" && Conf.IP2Region.V6DBPath == "" {
+		// 尝试读取旧的 config 文件中的 db_path 字段
+		// 这里需要使用反射或手动解析，因为 yaml.Unmarshal 不会将不存在的字段设置为默认值
+		// 我们将使用默认值来处理
+		logrus.Warn("检测到旧版本配置格式，将使用默认配置")
+		// 使用默认值
+		Conf.IP2Region.V4DBPath = "./ip2region_v4.xdb"
+		Conf.IP2Region.V6DBPath = "./ip2region_v6.xdb"
 	}
 
 	// 验证日志级别
@@ -210,24 +211,20 @@ func GetMaxIdleConns() int {
 	return Conf.Database.MaxIdleConns
 }
 
-// GetIP2RegionDBPath 获取IP2Region数据库路径
-func GetIP2RegionDBPath() string {
-	if Conf == nil || Conf.IP2Region.DBPath == "" {
+// GetIP2RegionV4DBPath 获取IP2Region IPv4数据库路径
+func GetIP2RegionV4DBPath() string {
+	if Conf == nil || Conf.IP2Region.V4DBPath == "" {
 		return "./ip2region_v4.xdb"
 	}
-	return Conf.IP2Region.DBPath
+	return Conf.IP2Region.V4DBPath
 }
 
-// GetIPVersion 获取IP版本
-func GetIPVersion() *xdb.Version {
-	if Conf == nil {
-		return xdb.IPv4
+// GetIP2RegionV6DBPath 获取IP2Region IPv6数据库路径
+func GetIP2RegionV6DBPath() string {
+	if Conf == nil || Conf.IP2Region.V6DBPath == "" {
+		return "./ip2region_v6.xdb"
 	}
-	// 根据配置的IP版本返回对应的常量
-	if Conf.IP2Region.IPVersion == "ipv6" {
-		return xdb.IPv6
-	}
-	return xdb.IPv4 // 默认IPv4
+	return Conf.IP2Region.V6DBPath
 }
 
 // GetLogLevel 获取日志级别

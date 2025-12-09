@@ -3,9 +3,8 @@ package common
 import (
 	"fmt"
 	"strings"
-	"sync"
 
-	"github.com/lionsoul2014/ip2region/binding/golang/xdb"
+	"github.com/lionsoul2014/ip2region/binding/golang/service"
 	"github.com/sirupsen/logrus"
 	"github.com/xrcuo/xrcuo-api/config"
 )
@@ -18,31 +17,38 @@ type RegionParts struct {
 	Isp      string // 运营商
 }
 
-// 预加载的IP2Region查询器
-var preloadedSearcher *xdb.Searcher
+// 全局ip2region服务
+var ip2regionService *service.Ip2Region
 
-// 公共对象池（复用ip2region查询器，减少资源占用）
-var regionSearcherPool = sync.Pool{
-	New: func() interface{} {
-		return preloadedSearcher
-	},
-}
-
-// InitIP2Region 预加载IP2Region数据库
+// InitIP2Region 初始化IP2Region服务
 func InitIP2Region() error {
-	dbPath := config.GetIP2RegionDBPath()
-	ipVersion := config.GetIPVersion()
+	v4DBPath := config.GetIP2RegionV4DBPath()
+	v6DBPath := config.GetIP2RegionV6DBPath()
 
-	logrus.Infof("开始预加载IP2Region数据库: %s, IP版本: %v", dbPath, ipVersion)
+	logrus.Infof("开始初始化IP2Region服务: IPv4路径: %s, IPv6路径: %s", v4DBPath, v6DBPath)
 
-	// 预加载数据库到内存
-	searcher, err := xdb.NewWithFileOnly(ipVersion, dbPath)
+	// 创建v4配置：指定缓存策略和v4的xdb文件路径
+	v4Config, err := service.NewV4Config(service.VIndexCache, v4DBPath, 20)
 	if err != nil {
-		return fmt.Errorf("IP2Region数据库预加载失败: %v", err)
+		return fmt.Errorf("创建IPv4配置失败: %v", err)
 	}
 
-	preloadedSearcher = searcher
-	logrus.Info("IP2Region数据库预加载成功")
+	// 尝试创建v6配置，如果失败则只使用v4配置
+	v6Config, err := service.NewV6Config(service.VIndexCache, v6DBPath, 20)
+	if err != nil {
+		logrus.Warnf("创建IPv6配置失败，将只使用IPv4配置: %v", err)
+		// 通过配置创建Ip2Region查询服务（只使用v4配置）
+		ip2regionService, err = service.NewIp2Region(v4Config, nil)
+	} else {
+		// 通过配置创建Ip2Region查询服务（同时使用v4和v6配置）
+		ip2regionService, err = service.NewIp2Region(v4Config, v6Config)
+	}
+
+	if err != nil {
+		return fmt.Errorf("创建IP2Region服务失败: %v", err)
+	}
+
+	logrus.Info("IP2Region服务初始化成功")
 	return nil
 }
 
@@ -58,21 +64,22 @@ func GetRegionByIP(ip string) (RegionParts, error) {
 		}, nil
 	}
 
-	// 从对象池获取查询器
-	searcher := regionSearcherPool.Get()
-	if searcher == nil {
-		return RegionParts{}, fmt.Errorf("地区查询器初始化失败")
-	}
-	defer regionSearcherPool.Put(searcher) // 归还对象池
-
 	// 执行查询
-	regionRaw, err := searcher.(*xdb.Searcher).SearchByStr(ip)
+	regionRaw, err := ip2regionService.SearchByStr(ip)
 	if err != nil {
 		return RegionParts{}, fmt.Errorf("IP查询失败：%v", err)
 	}
 
 	// 解析地区字符串（适配4段格式：国家|省份|城市|ISP）
 	return parseRegionRaw(regionRaw), nil
+}
+
+// CloseIP2Region 关闭IP2Region服务
+func CloseIP2Region() {
+	if ip2regionService != nil {
+		ip2regionService.Close()
+		logrus.Info("IP2Region服务已关闭")
+	}
 }
 
 // parseRegionRaw 解析ip2region原始返回值

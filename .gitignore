@@ -3,6 +3,7 @@ stats.db
 temp/   
 config.yaml
 ip2region_v4.xdb
+ip2region_v6.xdb
 images/
 logs/
 *.exe

@@ -161,8 +161,11 @@ func main() {
 	// 初始化应用
 	initApp()
 
-	// 确保应用退出时关闭数据库连接
+	// 确保应用退出时关闭资源
 	defer func() {
+		// 关闭IP2Region服务
+		common.CloseIP2Region()
+		// 关闭数据库连接
 		if err := db.CloseDB(); err != nil {
 			logrus.Errorf("关闭数据库连接失败：%v", err)
 		} else {
