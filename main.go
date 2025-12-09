@@ -99,6 +99,9 @@ func setupStaticFiles(r *gin.Engine) {
 	// 使用嵌入式文件系统提供静态资源
 	r.StaticFS("/static", http.FS(staticFS))
 
+	// 使用静态文件服务提供docsify文档，直接映射到static/docs目录
+	r.StaticFS("/docs", http.Dir("./static/docs"))
+
 	// 使用嵌入式文件系统提供favicon.ico
 	r.GET("/favicon.ico", func(c *gin.Context) {
 		c.FileFromFS("favicon.ico", http.FS(staticFS))
@@ -142,6 +145,11 @@ func registerRoutes(r *gin.Engine) {
 	r.GET("/api/stats", common.StatsAPIHandler)
 	// 添加API密钥管理页面路由
 	r.GET("/api_key", common.APIKeyHandler)
+
+	// 根路径重定向到docs
+	r.GET("/", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/docs/")
+	})
 }
 
 // 启动服务
