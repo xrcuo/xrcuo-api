@@ -7,19 +7,50 @@
   <meta name="description" content="Xrcuo API 文档">
   <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <style>
+    /* 修复复制按钮样式 */
+    .docsify-copy-code-button {
+      background-color: #42b983;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      opacity: 0.8;
+      transition: opacity 0.3s;
+    }
+    .docsify-copy-code-button:hover {
+      opacity: 1;
+    }
+    .docsify-copy-code-button.success {
+      background-color: #2ecc71;
+    }
+  </style>
 </head>
 <body>
   <div id="app"></div>
   <!-- Docsify v4 -->
   <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+  <!-- 复制代码插件 -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
   <script>
     window.$docsify = {
       name: 'Xrcuo API',
       repo: 'https://github.com/xrcuo/xrcuo-api',
       loadSidebar: true,
+      loadSidebarLevel: 1,
+      alias: {
+        '/.*/_sidebar.md': '/_sidebar.md'
+      },
       subMaxLevel: 3,
       auto2top: true,
-      homepage: 'README.md'
+      homepage: 'README.md',
+      copyCode: {
+        buttonText: '复制',
+        errorText: '错误',
+        successText: '已复制'
+      }
     }
   </script>
 </body>
