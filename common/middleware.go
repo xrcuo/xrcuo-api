@@ -1,80 +1,36 @@
 package common
 
 import (
+	"math"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"github.com/xrcuo/xrcuo-api/db"
 	"github.com/xrcuo/xrcuo-api/models"
 )
 
-// apiKeyCacheItem API密钥缓存项
-type apiKeyCacheItem struct {
-	Key        *models.APIKey
-	ExpireTime time.Time
-}
-
-// apiKeyCache API密钥缓存
-type apiKeyCache struct {
-	items          map[string]*apiKeyCacheItem
-	mutex          sync.RWMutex
-	expireDuration time.Duration
-}
-
 // 全局API密钥缓存实例
-var apiKeyCacheInstance = &apiKeyCache{
-	items:          make(map[string]*apiKeyCacheItem),
-	expireDuration: 5 * time.Minute, // 缓存5分钟
+var apiKeyCacheInstance *cache.Cache
+
+// init 初始化API密钥缓存
+func init() {
+	// 创建go-cache实例，设置默认过期时间为5分钟，清理间隔为10分钟
+	apiKeyCacheInstance = cache.New(5*time.Minute, 10*time.Minute)
 }
 
-// Get 获取缓存的API密钥
-func (c *apiKeyCache) Get(key string) *models.APIKey {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
-	item, exists := c.items[key]
-	if !exists {
-		return nil
-	}
-
-	// 检查是否过期
-	if time.Now().After(item.ExpireTime) {
-		// 过期后异步删除
-		go c.Delete(key)
-		return nil
-	}
-
-	return item.Key
+// GetAPICache 获取API密钥缓存实例
+func GetAPICache() *cache.Cache {
+	return apiKeyCacheInstance
 }
 
-// Set 设置API密钥缓存
-func (c *apiKeyCache) Set(key string, apiKey *models.APIKey) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	c.items[key] = &apiKeyCacheItem{
-		Key:        apiKey,
-		ExpireTime: time.Now().Add(c.expireDuration),
-	}
-}
-
-// Delete 删除API密钥缓存
-func (c *apiKeyCache) Delete(key string) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	delete(c.items, key)
-}
-
-// Clear 清空API密钥缓存
-func (c *apiKeyCache) Clear() {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-
-	c.items = make(map[string]*apiKeyCacheItem)
+// StopAPICacheCleanup 停止API密钥缓存的定期清理任务（go-cache不需要单独的清理任务，内部自动处理）
+func StopAPICacheCleanup() {
+	// go-cache内部自动处理清理，不需要单独停止
+	logrus.Debug("API密钥缓存清理任务已停止")
 }
 
 // RequestLoggerMiddleware 请求日志中间件
@@ -107,7 +63,7 @@ func RequestLoggerMiddleware() gin.HandlerFunc {
 // CORSMiddleware 跨域请求中间件
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 安全的CORS配置，避免使用通配符
+		// 安全的CORS配置
 		origin := c.GetHeader("Origin")
 		if origin != "" {
 			// 允许特定来源（生产环境中应替换为实际域名）
@@ -117,11 +73,12 @@ func CORSMiddleware() gin.HandlerFunc {
 			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 
+		// CORS相关头
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
 		c.Writer.Header().Set("Access-Control-Max-Age", "3600") // 预检请求结果缓存1小时
-		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length")
+		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, X-Response-Time")
 
 		// 安全头：防止点击劫持
 		c.Writer.Header().Set("X-Frame-Options", "DENY")
@@ -129,6 +86,20 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
 		// 安全头：防止MIME类型嗅探
 		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
+		// 安全头：防止SQL注入和XSS
+		c.Writer.Header().Set("X-Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src * data:; font-src 'self' data:")
+		// 安全头：减少信息泄露
+		c.Writer.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+		// 安全头：控制资源加载策略
+		c.Writer.Header().Set("Permissions-Policy", "geolocation=(self), camera=(), microphone=(), payment=()")
+		// 安全头：HTTP严格传输安全
+		c.Writer.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		// 安全头：防止缓存敏感信息
+		c.Writer.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+		// 安全头：防止缓存
+		c.Writer.Header().Set("Pragma", "no-cache")
+		// 安全头：防止缓存
+		c.Writer.Header().Set("Expires", "0")
 
 		// 处理预检请求
 		if c.Request.Method == "OPTIONS" {
@@ -157,10 +128,15 @@ func APIKeyMiddleware() gin.HandlerFunc {
 		}
 
 		// 验证API密钥
-		keyInfo := apiKeyCacheInstance.Get(apiKey)
-		var err error
+		var keyInfo *models.APIKey
+		// 从缓存获取
+		if val, found := apiKeyCacheInstance.Get(apiKey); found {
+			keyInfo = val.(*models.APIKey)
+		}
+
 		if keyInfo == nil {
 			// 从数据库获取
+			var err error
 			keyInfo, err = db.GetAPIKeyByKey(apiKey)
 			if err != nil {
 				ErrorResponse(c, http.StatusUnauthorized, 401, "无效的API密钥")
@@ -168,7 +144,7 @@ func APIKeyMiddleware() gin.HandlerFunc {
 				return
 			}
 			// 存入缓存
-			apiKeyCacheInstance.Set(apiKey, keyInfo)
+			apiKeyCacheInstance.Set(apiKey, keyInfo, cache.DefaultExpiration)
 		}
 
 		// 检查API密钥是否已达到使用上限
@@ -187,7 +163,7 @@ func APIKeyMiddleware() gin.HandlerFunc {
 
 		// 更新缓存中的使用次数
 		keyInfo.CurrentUsage++
-		apiKeyCacheInstance.Set(apiKey, keyInfo)
+		apiKeyCacheInstance.Set(apiKey, keyInfo, cache.DefaultExpiration)
 
 		// 将API密钥信息存储到上下文
 		c.Set("api_key", keyInfo)
@@ -197,79 +173,130 @@ func APIKeyMiddleware() gin.HandlerFunc {
 	}
 }
 
-// rateLimitItem 速率限制项
-type rateLimitItem struct {
-	Count      int
-	LastAccess time.Time
+// tokenBucket 令牌桶
+type tokenBucket struct {
+	capacity       float64    // 令牌桶容量
+	rate           float64    // 令牌生成速率（每秒）
+	tokens         float64    // 当前令牌数量
+	lastRefillTime time.Time  // 上次填充令牌的时间
+	mutex          sync.Mutex // 保护令牌桶的互斥锁
+}
+
+// refill 填充令牌
+func (tb *tokenBucket) refill() {
+	tb.mutex.Lock()
+	defer tb.mutex.Unlock()
+
+	now := time.Now()
+	elapsed := now.Sub(tb.lastRefillTime).Seconds()
+
+	// 计算需要填充的令牌数量
+	newTokens := elapsed * tb.rate
+	if newTokens > 0 {
+		// 填充令牌，但不超过容量
+		tb.tokens = math.Min(tb.tokens+newTokens, tb.capacity)
+		tb.lastRefillTime = now
+	}
+}
+
+// take 尝试获取一个令牌
+func (tb *tokenBucket) take() bool {
+	tb.mutex.Lock()
+	defer tb.mutex.Unlock()
+
+	now := time.Now()
+	elapsed := now.Sub(tb.lastRefillTime).Seconds()
+
+	// 填充令牌
+	newTokens := elapsed * tb.rate
+	if newTokens > 0 {
+		tb.tokens = math.Min(tb.tokens+newTokens, tb.capacity)
+		tb.lastRefillTime = now
+	}
+
+	// 尝试获取令牌
+	if tb.tokens >= 1 {
+		tb.tokens--
+		return true
+	}
+
+	return false
 }
 
 // rateLimiter 速率限制器
 type rateLimiter struct {
-	items           map[string]*rateLimitItem
+	buckets         map[string]*tokenBucket
 	mutex           sync.RWMutex
-	limit           int           // 时间窗口内的最大请求数
-	window          time.Duration // 时间窗口
+	capacity        float64       // 默认令牌桶容量
+	rate            float64       // 默认令牌生成速率（每秒）
 	cleanupInterval time.Duration // 清理过期项的时间间隔
+	inactiveTimeout time.Duration // 令牌桶的不活动超时时间
 }
 
 // 全局速率限制器实例
-var globalRateLimiter = &rateLimiter{
-	items:           make(map[string]*rateLimitItem),
-	limit:           100,         // 100个请求
-	window:          time.Minute, // 1分钟窗口
-	cleanupInterval: time.Hour,   // 每小时清理一次过期项
-}
+var globalRateLimiter *rateLimiter
 
 // init 初始化速率限制器
 func init() {
+	globalRateLimiter = &rateLimiter{
+		buckets:         make(map[string]*tokenBucket),
+		capacity:        100,              // 令牌桶容量，允许突发流量
+		rate:            1.666,            // 令牌生成速率，约100个/分钟
+		cleanupInterval: 10 * time.Minute, // 每10分钟清理一次
+		inactiveTimeout: 30 * time.Minute, // 30分钟不活动则清理
+	}
+
 	// 启动定期清理过期项的任务
 	go func() {
 		ticker := time.NewTicker(globalRateLimiter.cleanupInterval)
 		defer ticker.Stop()
 
 		for range ticker.C {
-			globalRateLimiter.cleanupExpiredItems()
+			globalRateLimiter.cleanupInactiveBuckets()
 		}
 	}()
 }
 
 // Allow 检查是否允许请求
 func (rl *rateLimiter) Allow(key string) bool {
-	rl.mutex.Lock()
-	defer rl.mutex.Unlock()
+	// 先获取读锁，检查令牌桶是否存在
+	rl.mutex.RLock()
+	tb, exists := rl.buckets[key]
+	rl.mutex.RUnlock()
 
-	item, exists := rl.items[key]
-	now := time.Now()
-
-	// 如果不存在，或者已经过期，初始化新的限制项
-	if !exists || now.Sub(item.LastAccess) > rl.window {
-		rl.items[key] = &rateLimitItem{
-			Count:      1,
-			LastAccess: now,
+	// 如果不存在，创建一个新的令牌桶
+	if !exists {
+		rl.mutex.Lock()
+		// 双重检查，避免并发创建
+		if tb, exists = rl.buckets[key]; !exists {
+			tb = &tokenBucket{
+				capacity:       rl.capacity,
+				rate:           rl.rate,
+				tokens:         rl.capacity, // 初始时填满令牌桶
+				lastRefillTime: time.Now(),
+			}
+			rl.buckets[key] = tb
 		}
-		return true
+		rl.mutex.Unlock()
 	}
 
-	// 如果请求数超过限制，拒绝请求
-	if item.Count >= rl.limit {
-		return false
-	}
-
-	// 否则，增加请求数并更新最后访问时间
-	item.Count++
-	item.LastAccess = now
-	return true
+	// 尝试从令牌桶中获取一个令牌
+	return tb.take()
 }
 
-// cleanupExpiredItems 清理过期的速率限制项
-func (rl *rateLimiter) cleanupExpiredItems() {
+// cleanupInactiveBuckets 清理不活动的令牌桶
+func (rl *rateLimiter) cleanupInactiveBuckets() {
 	rl.mutex.Lock()
 	defer rl.mutex.Unlock()
 
 	now := time.Now()
-	for key, item := range rl.items {
-		if now.Sub(item.LastAccess) > rl.window {
-			delete(rl.items, key)
+	for key, tb := range rl.buckets {
+		tb.mutex.Lock()
+		inactiveTime := now.Sub(tb.lastRefillTime)
+		tb.mutex.Unlock()
+
+		if inactiveTime > rl.inactiveTimeout {
+			delete(rl.buckets, key)
 		}
 	}
 }
@@ -309,5 +336,165 @@ func StatsMiddleware() gin.HandlerFunc {
 		if GlobalStats != nil {
 			go GlobalStats.RecordCall(path, method, clientIP, statusCode)
 		}
+	}
+}
+
+// PerformanceMetrics 性能指标结构体
+type PerformanceMetrics struct {
+	TotalRequests     int64                   `json:"total_requests"`
+	TotalResponseTime time.Duration           `json:"total_response_time"`
+	AvgResponseTime   time.Duration           `json:"avg_response_time"`
+	MaxResponseTime   time.Duration           `json:"max_response_time"`
+	MinResponseTime   time.Duration           `json:"min_response_time"`
+	QPS               float64                 `json:"qps"`
+	LastResetTime     time.Time               `json:"last_reset_time"`
+	MethodStats       map[string]*MethodStats `json:"method_stats"`
+	PathStats         map[string]*PathStats   `json:"path_stats"`
+	StatusStats       map[int]*StatusStats    `json:"status_stats"`
+}
+
+// MethodStats 按HTTP方法统计的性能指标
+type MethodStats struct {
+	Count             int64         `json:"count"`
+	TotalResponseTime time.Duration `json:"total_response_time"`
+	AvgResponseTime   time.Duration `json:"avg_response_time"`
+}
+
+// PathStats 按路径统计的性能指标
+type PathStats struct {
+	Count             int64         `json:"count"`
+	TotalResponseTime time.Duration `json:"total_response_time"`
+	AvgResponseTime   time.Duration `json:"avg_response_time"`
+}
+
+// StatusStats 按状态码统计的性能指标
+type StatusStats struct {
+	Count             int64         `json:"count"`
+	TotalResponseTime time.Duration `json:"total_response_time"`
+	AvgResponseTime   time.Duration `json:"avg_response_time"`
+}
+
+// 全局性能指标
+var (
+	performanceMetrics = &PerformanceMetrics{
+		TotalRequests:     0,
+		TotalResponseTime: 0,
+		MaxResponseTime:   0,
+		MinResponseTime:   time.Hour, // 初始值设为1小时
+		LastResetTime:     time.Now(),
+		MethodStats:       make(map[string]*MethodStats),
+		PathStats:         make(map[string]*PathStats),
+		StatusStats:       make(map[int]*StatusStats),
+	}
+	metricsMutex = &sync.RWMutex{}
+)
+
+// PerformanceMiddleware 性能监控中间件
+func PerformanceMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 记录请求开始时间
+		startTime := time.Now()
+
+		// 处理请求
+		c.Next()
+
+		// 记录请求结束时间和耗时
+		endTime := time.Now()
+		latency := endTime.Sub(startTime)
+
+		// 获取状态码
+		statusCode := c.Writer.Status()
+		// 获取请求方法
+		method := c.Request.Method
+		// 获取请求路径
+		path := c.Request.URL.Path
+
+		// 更新性能指标
+		metricsMutex.Lock()
+		defer metricsMutex.Unlock()
+
+		// 更新总请求数
+		performanceMetrics.TotalRequests++
+
+		// 更新总响应时间
+		performanceMetrics.TotalResponseTime += latency
+
+		// 更新平均响应时间
+		performanceMetrics.AvgResponseTime = performanceMetrics.TotalResponseTime / time.Duration(performanceMetrics.TotalRequests)
+
+		// 更新最大响应时间
+		if latency > performanceMetrics.MaxResponseTime {
+			performanceMetrics.MaxResponseTime = latency
+		}
+
+		// 更新最小响应时间
+		if latency < performanceMetrics.MinResponseTime {
+			performanceMetrics.MinResponseTime = latency
+		}
+
+		// 更新QPS（每秒请求数）
+		elapsed := endTime.Sub(performanceMetrics.LastResetTime).Seconds()
+		if elapsed > 0 {
+			performanceMetrics.QPS = float64(performanceMetrics.TotalRequests) / elapsed
+		}
+
+		// 更新按方法统计的指标
+		if _, exists := performanceMetrics.MethodStats[method]; !exists {
+			performanceMetrics.MethodStats[method] = &MethodStats{
+				Count:             0,
+				TotalResponseTime: 0,
+			}
+		}
+		methodStat := performanceMetrics.MethodStats[method]
+		methodStat.Count++
+		methodStat.TotalResponseTime += latency
+		methodStat.AvgResponseTime = methodStat.TotalResponseTime / time.Duration(methodStat.Count)
+
+		// 更新按路径统计的指标
+		if _, exists := performanceMetrics.PathStats[path]; !exists {
+			performanceMetrics.PathStats[path] = &PathStats{
+				Count:             0,
+				TotalResponseTime: 0,
+			}
+		}
+		pathStat := performanceMetrics.PathStats[path]
+		pathStat.Count++
+		pathStat.TotalResponseTime += latency
+		pathStat.AvgResponseTime = pathStat.TotalResponseTime / time.Duration(pathStat.Count)
+
+		// 更新按状态码统计的指标
+		if _, exists := performanceMetrics.StatusStats[statusCode]; !exists {
+			performanceMetrics.StatusStats[statusCode] = &StatusStats{
+				Count:             0,
+				TotalResponseTime: 0,
+			}
+		}
+		statusStat := performanceMetrics.StatusStats[statusCode]
+		statusStat.Count++
+		statusStat.TotalResponseTime += latency
+		statusStat.AvgResponseTime = statusStat.TotalResponseTime / time.Duration(statusStat.Count)
+
+		// 在响应头中添加请求耗时
+		c.Writer.Header().Set("X-Response-Time", latency.String())
+	}
+}
+
+// GetPerformanceMetrics 获取当前性能指标
+func GetPerformanceMetrics() *PerformanceMetrics {
+	metricsMutex.RLock()
+	defer metricsMutex.RUnlock()
+
+	// 返回性能指标的副本，避免并发修改问题
+	return &PerformanceMetrics{
+		TotalRequests:     performanceMetrics.TotalRequests,
+		TotalResponseTime: performanceMetrics.TotalResponseTime,
+		AvgResponseTime:   performanceMetrics.AvgResponseTime,
+		MaxResponseTime:   performanceMetrics.MaxResponseTime,
+		MinResponseTime:   performanceMetrics.MinResponseTime,
+		QPS:               performanceMetrics.QPS,
+		LastResetTime:     performanceMetrics.LastResetTime,
+		MethodStats:       performanceMetrics.MethodStats,
+		PathStats:         performanceMetrics.PathStats,
+		StatusStats:       performanceMetrics.StatusStats,
 	}
 }

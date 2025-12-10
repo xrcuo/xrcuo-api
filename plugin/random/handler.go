@@ -44,8 +44,13 @@ func init() {
 
 // 获取本地图片文件列表，带缓存
 func getLocalImages() ([]string, error) {
+	// 获取配置管理器实例
+	cm := config.GetInstance()
+	// 获取当前配置
+	conf := cm.GetConfig()
+	
 	// 检查是否启用本地图片
-	if !config.Conf.RandomImage.LocalEnabled {
+	if !conf.RandomImage.LocalEnabled {
 		return nil, nil
 	}
 
@@ -54,7 +59,7 @@ func getLocalImages() ([]string, error) {
 		return localImagesCache, nil
 	}
 
-	localPath := config.Conf.RandomImage.LocalPath
+	localPath := conf.RandomImage.LocalPath
 	var images []string
 
 	// 遍历本地图片目录
@@ -102,7 +107,11 @@ func GetRandomImageHandler(c *gin.Context) {
 		// 随机选择一张本地图片
 		index := rand.Intn(len(images))
 		imagePath := images[index]
-		fullPath := filepath.Join(config.Conf.RandomImage.LocalPath, imagePath)
+		// 获取配置管理器实例
+		cm := config.GetInstance()
+		// 获取当前配置
+		conf := cm.GetConfig()
+		fullPath := filepath.Join(conf.RandomImage.LocalPath, imagePath)
 
 		// 记录请求日志（只记录关键信息）
 		logrus.Debugf("本地随机图片请求: %s, IP: %s", imagePath, c.ClientIP())
