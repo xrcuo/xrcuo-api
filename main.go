@@ -14,12 +14,6 @@ import (
 	"github.com/xrcuo/xrcuo-api/db"
 	"github.com/xrcuo/xrcuo-api/log"
 	"github.com/xrcuo/xrcuo-api/plugin"
-	"github.com/xrcuo/xrcuo-api/plugin/api_key"
-	"github.com/xrcuo/xrcuo-api/plugin/client"
-	"github.com/xrcuo/xrcuo-api/plugin/ip"
-	"github.com/xrcuo/xrcuo-api/plugin/ipify"
-	"github.com/xrcuo/xrcuo-api/plugin/ping"
-	"github.com/xrcuo/xrcuo-api/plugin/random"
 )
 
 //go:embed static
@@ -157,13 +151,8 @@ func registerRoutes(r *gin.Engine) {
 	// 创建插件管理器
 	pluginManager := plugin.NewPluginManager()
 
-	// 注册各个插件
-	pluginManager.Register(ip.IPPlugin)
-	pluginManager.Register(ping.PingPlugin)
-	pluginManager.Register(random.RandomPlugin)
-	pluginManager.Register(client.ClientPlugin)
-	pluginManager.Register(ipify.IpifyPlugin)
-	// 后续新增插件，只需在这里添加注册语句即可
+	// 注册所有内置插件
+	pluginManager.RegisterBuiltinPlugins()
 
 	// 初始化所有插件
 	if err := pluginManager.InitAll(); err != nil {
@@ -188,7 +177,7 @@ func registerRoutes(r *gin.Engine) {
 	authGroup := r.Group("/auth")
 	{
 		// 注册API密钥管理路由
-		api_key.RegisterRouter(authGroup)
+		plugin.RegisterAPIRouter(authGroup)
 	}
 
 	// 添加统计信息展示页面路由

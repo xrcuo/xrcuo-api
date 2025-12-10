@@ -3,6 +3,12 @@ package plugin
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/xrcuo/xrcuo-api/plugin/api_key"
+	"github.com/xrcuo/xrcuo-api/plugin/client"
+	"github.com/xrcuo/xrcuo-api/plugin/ip"
+	"github.com/xrcuo/xrcuo-api/plugin/ipify"
+	"github.com/xrcuo/xrcuo-api/plugin/ping"
+	"github.com/xrcuo/xrcuo-api/plugin/random"
 )
 
 // Plugin 插件接口
@@ -25,9 +31,9 @@ type PluginInfo struct {
 
 // PluginManager 插件管理器
 type PluginManager struct {
-	plugins      []Plugin
-	initialized  bool
-	pluginInfos  map[string]*PluginInfo
+	plugins     []Plugin
+	initialized bool
+	pluginInfos map[string]*PluginInfo
 }
 
 // NewPluginManager 创建新的插件管理器
@@ -45,13 +51,13 @@ func (pm *PluginManager) Register(plugin Plugin) {
 		logrus.Warnf("插件 %s 已注册，跳过重复注册", name)
 		return
 	}
-	
+
 	pm.plugins = append(pm.plugins, plugin)
 	pm.pluginInfos[name] = &PluginInfo{
 		Name:    name,
 		Enabled: true,
 	}
-	
+
 	logrus.Infof("插件 %s 已注册", name)
 }
 
@@ -60,7 +66,7 @@ func (pm *PluginManager) InitAll() error {
 	if pm.initialized {
 		return nil
 	}
-	
+
 	for _, plugin := range pm.plugins {
 		if err := plugin.Init(); err != nil {
 			logrus.Errorf("初始化插件 %s 失败：%v", plugin.Name(), err)
@@ -68,7 +74,7 @@ func (pm *PluginManager) InitAll() error {
 		}
 		logrus.Infof("插件 %s 初始化成功", plugin.Name())
 	}
-	
+
 	pm.initialized = true
 	return nil
 }
@@ -90,7 +96,7 @@ func (pm *PluginManager) CleanupAll() {
 		}
 		logrus.Infof("插件 %s 资源清理成功", plugin.Name())
 	}
-	
+
 	pm.initialized = false
 }
 
@@ -111,7 +117,7 @@ func (pm *PluginManager) EnablePlugin(name string) bool {
 	if !exists {
 		return false
 	}
-	
+
 	info.Enabled = true
 	logrus.Infof("插件 %s 已启用", name)
 	return true
@@ -123,8 +129,22 @@ func (pm *PluginManager) DisablePlugin(name string) bool {
 	if !exists {
 		return false
 	}
-	
+
 	info.Enabled = false
 	logrus.Infof("插件 %s 已禁用", name)
 	return true
+}
+
+// RegisterBuiltinPlugins 注册所有内置插件
+func (pm *PluginManager) RegisterBuiltinPlugins() {
+	pm.Register(ip.IPPlugin)
+	pm.Register(ping.PingPlugin)
+	pm.Register(random.RandomPlugin)
+	pm.Register(client.ClientPlugin)
+	pm.Register(ipify.IpifyPlugin)
+}
+
+// RegisterAPIRouter 注册API密钥管理路由
+func RegisterAPIRouter(r *gin.RouterGroup) {
+	api_key.RegisterRouter(r)
 }
