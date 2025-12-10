@@ -186,23 +186,6 @@ type tokenBucket struct {
 	mutex          sync.Mutex // 保护令牌桶的互斥锁
 }
 
-// refill 填充令牌
-func (tb *tokenBucket) refill() {
-	tb.mutex.Lock()
-	defer tb.mutex.Unlock()
-
-	now := time.Now()
-	elapsed := now.Sub(tb.lastRefillTime).Seconds()
-
-	// 计算需要填充的令牌数量
-	newTokens := elapsed * tb.rate
-	if newTokens > 0 {
-		// 填充令牌，但不超过容量
-		tb.tokens = math.Min(tb.tokens+newTokens, tb.capacity)
-		tb.lastRefillTime = now
-	}
-}
-
 // take 尝试获取一个令牌
 func (tb *tokenBucket) take() bool {
 	tb.mutex.Lock()

@@ -12,6 +12,7 @@ import (
 	"github.com/xrcuo/xrcuo-api/common"
 	"github.com/xrcuo/xrcuo-api/config"
 	"github.com/xrcuo/xrcuo-api/db"
+	"github.com/xrcuo/xrcuo-api/log"
 	"github.com/xrcuo/xrcuo-api/plugin"
 	"github.com/xrcuo/xrcuo-api/plugin/api_key"
 	"github.com/xrcuo/xrcuo-api/plugin/client"
@@ -31,13 +32,17 @@ var globalPluginManager *plugin.PluginManager
 // initApp 初始化应用程序
 // 功能：
 // 1. 解析配置文件
-// 2. 启动配置文件监听
-// 3. 初始化数据库连接
-// 4. 预加载IP2Region数据库
-// 5. 初始化统计信息
+// 2. 初始化日志配置
+// 3. 启动配置文件监听
+// 4. 初始化数据库连接
+// 5. 预加载IP2Region数据库
+// 6. 初始化统计信息
 func initApp() {
 	// 解析配置文件
 	config.Parse()
+
+	// 初始化日志配置
+	log.InitLogger()
 
 	// 注册配置更新回调
 	config.GetInstance().RegisterUpdateCallback(func(newConfig *config.Config) {
@@ -55,6 +60,9 @@ func initApp() {
 		} else {
 			logrus.Info("IP2Region服务已重新初始化")
 		}
+
+		// 重新初始化日志配置
+		log.InitLogger()
 	})
 
 	// 启动配置文件监听，实现配置热重载

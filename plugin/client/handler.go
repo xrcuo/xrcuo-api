@@ -1,7 +1,6 @@
 package client
 
 import (
-	"io"
 	"net/http"
 	"regexp"
 	"strings"
@@ -128,36 +127,4 @@ func GetRealIP(c *gin.Context) string {
 
 	// 最后使用Gin的ClientIP方法
 	return c.ClientIP()
-}
-
-// getPublicIP 调用外部服务获取真实公网IP（备用方案）
-func getPublicIP() (string, error) {
-	// 使用多个备选服务，提高可靠性
-	services := []string{
-		"https://api.ipify.org",
-		"https://ipinfo.io/ip",
-		"https://icanhazip.com",
-	}
-
-	for _, service := range services {
-		resp, err := http.Get(service)
-		if err != nil {
-			continue
-		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode == http.StatusOK {
-			ipBytes, err := io.ReadAll(resp.Body)
-			if err != nil {
-				continue
-			}
-			ip := strings.TrimSpace(string(ipBytes))
-			if ip != "" {
-				return ip, nil
-			}
-		}
-	}
-
-	// 如果所有服务都失败，返回默认的示例IP
-	return "112.51.209.121", nil
 }

@@ -2,16 +2,13 @@ package config
 
 import (
 	_ "embed"
-	"io"
 	"os"
-	"path/filepath"
 	"sync"
 	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -178,9 +175,6 @@ func (cm *ConfigManager) ParseConfig() {
 
 	// 设置配置
 	cm.SetConfig(config)
-
-	// 应用日志级别配置
-	cm.setLogLevel()
 
 	// 如果是配置更新，则执行更新逻辑
 	if isUpdate {
@@ -413,58 +407,4 @@ func GetLogLevel() string {
 		return "info"
 	}
 	return config.Log.Level
-}
-
-// 根据配置设置日志级别和文件输出
-func (cm *ConfigManager) setLogLevel() {
-	config := cm.GetConfig()
-	if config == nil {
-		return
-	}
-
-	// 设置日志级别
-	levelStr := config.Log.Level
-	level, err := logrus.ParseLevel(levelStr)
-	if err != nil {
-		logrus.Warnf("无效的日志级别: %s, 使用默认级别: info", levelStr)
-		level = logrus.InfoLevel
-	}
-	logrus.SetLevel(level)
-
-	// 设置日志格式
-	logrus.SetFormatter(&logrus.TextFormatter{
-		FullTimestamp: true,
-	})
-
-	// 如果配置了日志文件路径，则配置日志输出
-	if config.Log.File != "" {
-		// 确保日志目录存在
-		logDir := filepath.Dir(config.Log.File)
-		if err := os.MkdirAll(logDir, 0755); err != nil {
-			logrus.Warnf("创建日志目录失败: %v, 仅输出到控制台", err)
-		} else {
-			// 创建日志文件输出
-			fileLogger := &lumberjack.Logger{
-				Filename:   config.Log.File,
-				MaxSize:    config.Log.MaxSize,
-				MaxBackups: config.Log.MaxBackups,
-				MaxAge:     config.Log.MaxAge,
-			}
-
-			if config.Log.ConsoleOutput {
-				// 同时输出到控制台和文件
-				logrus.SetOutput(io.MultiWriter(os.Stdout, fileLogger))
-			} else {
-				// 只输出到文件
-				logrus.SetOutput(fileLogger)
-			}
-
-			logrus.Infof("日志文件已配置: %s", config.Log.File)
-		}
-	} else {
-		// 只输出到控制台
-		logrus.SetOutput(os.Stdout)
-	}
-
-	logrus.Debugf("日志级别已设置为: %s", level)
 }
