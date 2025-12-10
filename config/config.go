@@ -2,6 +2,7 @@ package config
 
 import (
 	_ "embed"
+	"log"
 	"os"
 	"sync"
 	"time"
@@ -65,6 +66,8 @@ type ConfigManager struct {
 	isWatching      bool
 	updateCallbacks []ConfigUpdateCallback
 	callbacksMutex  sync.Mutex
+	debounceTimer   *time.Timer
+	debounceMutex   sync.Mutex
 }
 
 // 全局配置管理器实例
@@ -187,7 +190,7 @@ func (cm *ConfigManager) ParseConfig() {
 		// 执行所有配置更新回调
 		cm.executeUpdateCallbacks(config)
 
-		logrus.Info("配置更新应用完成")
+		log.Println("配置更新应用完成")
 	}
 }
 
@@ -278,6 +281,12 @@ func (cm *ConfigManager) WatchConfig() {
 		defer func() {
 			cm.watcher.Close()
 			cm.isWatching = false
+			// 清理定时器
+			cm.debounceMutex.Lock()
+			if cm.debounceTimer != nil {
+				cm.debounceTimer.Stop()
+			}
+			cm.debounceMutex.Unlock()
 		}()
 
 		for {
@@ -290,9 +299,16 @@ func (cm *ConfigManager) WatchConfig() {
 				// 只处理写入和创建事件
 				if event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
 					logrus.Info("配置文件发生变化，重新加载配置")
-					// 延迟处理，避免文件被锁定
-					time.Sleep(100 * time.Millisecond)
-					cm.ParseConfig()
+					
+					// 防抖处理：短时间内只处理一次配置更新
+					cm.debounceMutex.Lock()
+					if cm.debounceTimer != nil {
+						cm.debounceTimer.Stop()
+					}
+					cm.debounceTimer = time.AfterFunc(100*time.Millisecond, func() {
+						cm.ParseConfig()
+					})
+					cm.debounceMutex.Unlock()
 				}
 			case err, ok := <-cm.watcher.Errors:
 				if !ok {
