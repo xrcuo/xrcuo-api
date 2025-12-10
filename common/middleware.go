@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
+	"github.com/xrcuo/xrcuo-api/config"
 	"github.com/xrcuo/xrcuo-api/db"
 	"github.com/xrcuo/xrcuo-api/models"
 )
@@ -46,17 +47,20 @@ func RequestLoggerMiddleware() gin.HandlerFunc {
 		endTime := time.Now()
 		latency := endTime.Sub(startTime)
 
-		// 记录请求日志，移除敏感信息
-		logrus.WithFields(logrus.Fields{
-			"method":     c.Request.Method,
-			"path":       c.Request.URL.Path,
-			"status":     c.Writer.Status(),
-			"client_ip":  c.ClientIP(), // 注意：生产环境中可能需要掩码IP地址
-			"latency":    latency,
-			"latency_ms": latency.Milliseconds(),
-			"size":       c.Writer.Size(),
-			"timestamp":  endTime.Format(time.RFC3339),
-		}).Info("API请求")
+		// 检查是否启用请求日志
+		if config.GetInstance().GetConfig().Log.RequestLog {
+			// 记录请求日志，移除敏感信息
+			logrus.WithFields(logrus.Fields{
+				"method":     c.Request.Method,
+				"path":       c.Request.URL.Path,
+				"status":     c.Writer.Status(),
+				"client_ip":  c.ClientIP(), // 注意：生产环境中可能需要掩码IP地址
+				"latency":    latency,
+				"latency_ms": latency.Milliseconds(),
+				"size":       c.Writer.Size(),
+				"timestamp":  endTime.Format(time.RFC3339),
+			}).Info("API请求")
+		}
 	}
 }
 

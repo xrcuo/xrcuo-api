@@ -2,6 +2,7 @@ package config
 
 import (
 	_ "embed"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
@@ -38,11 +39,13 @@ type Config struct {
 	} `yaml:"ip2region"`
 
 	Log struct {
-		Level      string `yaml:"level"`
-		File       string `yaml:"file"`
-		MaxSize    int    `yaml:"max_size"`    // 单个日志文件最大大小（MB）
-		MaxBackups int    `yaml:"max_backups"` // 保留的日志文件数量
-		MaxAge     int    `yaml:"max_age"`     // 日志文件保留天数
+		Level         string `yaml:"level"`
+		File          string `yaml:"file"`
+		ConsoleOutput bool   `yaml:"console_output"` // 是否输出到控制台
+		RequestLog    bool   `yaml:"request_log"`    // 是否输出请求日志
+		MaxSize       int    `yaml:"max_size"`       // 单个日志文件最大大小（MB）
+		MaxBackups    int    `yaml:"max_backups"`    // 保留的日志文件数量
+		MaxAge        int    `yaml:"max_age"`        // 日志文件保留天数
 	} `yaml:"log"`
 
 	RandomImage struct {
@@ -53,12 +56,12 @@ type Config struct {
 
 // ConfigManager 配置管理器单例
 type ConfigManager struct {
-	config      *Config
-	configPath  string
-	mutex       sync.RWMutex
-	watcher     *fsnotify.Watcher
-	stopChan    chan struct{}
-	isWatching  bool
+	config     *Config
+	configPath string
+	mutex      sync.RWMutex
+	watcher    *fsnotify.Watcher
+	stopChan   chan struct{}
+	isWatching bool
 }
 
 // 全局配置管理器实例
@@ -247,7 +250,7 @@ func (cm *ConfigManager) WatchConfig() {
 				if !ok {
 					return
 				}
-				
+
 				// 只处理写入和创建事件
 				if event.Op&(fsnotify.Write|fsnotify.Create) != 0 {
 					logrus.Info("配置文件发生变化，重新加载配置")
@@ -391,24 +394,34 @@ func (cm *ConfigManager) setLogLevel() {
 		FullTimestamp: true,
 	})
 
-	// 如果配置了日志文件路径，则添加文件输出
+	// 如果配置了日志文件路径，则配置日志输出
 	if config.Log.File != "" {
 		// 确保日志目录存在
 		logDir := filepath.Dir(config.Log.File)
 		if err := os.MkdirAll(logDir, 0755); err != nil {
 			logrus.Warnf("创建日志目录失败: %v, 仅输出到控制台", err)
-			return
+		} else {
+			// 创建日志文件输出
+			fileLogger := &lumberjack.Logger{
+				Filename:   config.Log.File,
+				MaxSize:    config.Log.MaxSize,
+				MaxBackups: config.Log.MaxBackups,
+				MaxAge:     config.Log.MaxAge,
+			}
+
+			if config.Log.ConsoleOutput {
+				// 同时输出到控制台和文件
+				logrus.SetOutput(io.MultiWriter(os.Stdout, fileLogger))
+			} else {
+				// 只输出到文件
+				logrus.SetOutput(fileLogger)
+			}
+
+			logrus.Infof("日志文件已配置: %s", config.Log.File)
 		}
-
-		// 配置日志文件输出，使用 lumberjack 处理日志滚动
-		logrus.SetOutput(&lumberjack.Logger{
-			Filename:   config.Log.File,
-			MaxSize:    config.Log.MaxSize,
-			MaxBackups: config.Log.MaxBackups,
-			MaxAge:     config.Log.MaxAge,
-		})
-
-		logrus.Infof("日志文件已配置: %s", config.Log.File)
+	} else {
+		// 只输出到控制台
+		logrus.SetOutput(os.Stdout)
 	}
 
 	logrus.Debugf("日志级别已设置为: %s", level)
