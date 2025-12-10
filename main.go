@@ -39,6 +39,24 @@ func initApp() {
 	// 解析配置文件
 	config.Parse()
 
+	// 注册配置更新回调
+	config.GetInstance().RegisterUpdateCallback(func(newConfig *config.Config) {
+		// 更新数据库连接池配置
+		if dbDB := db.GetDB(); dbDB != nil {
+			dbDB.SetMaxOpenConns(newConfig.Database.MaxOpenConns)
+			dbDB.SetMaxIdleConns(newConfig.Database.MaxIdleConns)
+			logrus.Info("数据库连接池配置已更新")
+		}
+
+		// 重新初始化IP2Region服务
+		common.CloseIP2Region()
+		if err := common.InitIP2Region(); err != nil {
+			logrus.Errorf("IP2Region服务重新初始化失败: %v", err)
+		} else {
+			logrus.Info("IP2Region服务已重新初始化")
+		}
+	})
+
 	// 启动配置文件监听，实现配置热重载
 	config.GetInstance().WatchConfig()
 

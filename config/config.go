@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fsnotify/fsnotify"
+	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 	"gopkg.in/yaml.v3"
@@ -54,14 +55,19 @@ type Config struct {
 	} `yaml:"random_image"`
 }
 
+// ConfigUpdateCallback 配置更新回调函数类型
+type ConfigUpdateCallback func(*Config)
+
 // ConfigManager 配置管理器单例
 type ConfigManager struct {
-	config     *Config
-	configPath string
-	mutex      sync.RWMutex
-	watcher    *fsnotify.Watcher
-	stopChan   chan struct{}
-	isWatching bool
+	config          *Config
+	configPath      string
+	mutex           sync.RWMutex
+	watcher         *fsnotify.Watcher
+	stopChan        chan struct{}
+	isWatching      bool
+	updateCallbacks []ConfigUpdateCallback
+	callbacksMutex  sync.Mutex
 }
 
 // 全局配置管理器实例
@@ -114,6 +120,25 @@ func Parse() {
 	cm.ParseConfig()
 }
 
+// RegisterUpdateCallback 注册配置更新回调
+func (cm *ConfigManager) RegisterUpdateCallback(callback ConfigUpdateCallback) {
+	cm.callbacksMutex.Lock()
+	defer cm.callbacksMutex.Unlock()
+	cm.updateCallbacks = append(cm.updateCallbacks, callback)
+}
+
+// executeUpdateCallbacks 执行所有配置更新回调
+func (cm *ConfigManager) executeUpdateCallbacks(config *Config) {
+	cm.callbacksMutex.Lock()
+	callbacks := make([]ConfigUpdateCallback, len(cm.updateCallbacks))
+	copy(callbacks, cm.updateCallbacks)
+	cm.callbacksMutex.Unlock()
+
+	for _, callback := range callbacks {
+		callback(config)
+	}
+}
+
 // ParseConfig 解析配置文件
 func (cm *ConfigManager) ParseConfig() {
 	// 使用环境变量或默认路径
@@ -148,11 +173,28 @@ func (cm *ConfigManager) ParseConfig() {
 	// 验证配置
 	cm.validateConfig(config)
 
+	// 检查是否是配置更新
+	isUpdate := cm.config != nil
+
 	// 设置配置
 	cm.SetConfig(config)
 
 	// 应用日志级别配置
 	cm.setLogLevel()
+
+	// 如果是配置更新，则执行更新逻辑
+	if isUpdate {
+		logrus.Info("正在应用更新后的配置...")
+
+		// 更新Gin模式
+		gin.SetMode(cm.GetConfig().Server.Mode)
+		logrus.Infof("Gin模式已更新为: %s", cm.GetConfig().Server.Mode)
+
+		// 执行所有配置更新回调
+		cm.executeUpdateCallbacks(config)
+
+		logrus.Info("配置更新应用完成")
+	}
 }
 
 // validateConfig 验证配置的有效性
