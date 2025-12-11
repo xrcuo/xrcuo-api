@@ -28,10 +28,10 @@ body {
     margin-right: 1rem;
 }
 .stat-card {
-    background: white;
-    border-radius: 15px;
-    padding: 2rem 1.5rem;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9ff 100%);
+    border-radius: 18px;
+    padding: 2.5rem 2rem;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
     transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     text-align: center;
     position: relative;
@@ -39,6 +39,7 @@ body {
     animation: cardSlideIn 0.6s ease-out forwards;
     opacity: 0;
     transform: translateY(20px);
+    border: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 /* 为不同卡片添加延迟动画 */
@@ -101,13 +102,19 @@ body {
 }
 
 .stat-card .stat-number {
-    font-size: 2.75rem;
-    font-weight: 800;
+    font-size: 3.25rem;
+    font-weight: 900;
     color: #333;
     margin-bottom: 0.75rem;
     transition: all 0.3s ease;
     position: relative;
     display: inline-block;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    animation: countUp 2s ease-out;
 }
 
 .stat-card:hover .stat-number {
@@ -250,6 +257,17 @@ body {
         transform: translateX(100%);
     }
 }
+
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
 .table {
     margin-bottom: 0;
 }
@@ -290,8 +308,13 @@ body {
 .chart-container {
     margin-bottom: 2rem;
     position: relative;
-    height: 300px;
+    height: 350px;
     width: 100%;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(102, 126, 234, 0.1);
 }
 
 .path-progress {

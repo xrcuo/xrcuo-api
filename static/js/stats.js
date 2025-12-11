@@ -7,19 +7,40 @@ function calculatePercentage(part, total) {
     return Math.round((part / total) * 100);
 }
 
+// 数字计数动画
+function animateCounter(element, target, duration = 1500) {
+    let start = 0;
+    const increment = target / (duration / 16);
+    const timer = setInterval(() => {
+        start += increment;
+        if (start >= target) {
+            element.textContent = target.toLocaleString();
+            clearInterval(timer);
+        } else {
+            element.textContent = Math.floor(start).toLocaleString();
+        }
+    }, 16);
+}
+
 // 更新统计卡片数据
 function updateStatCards(stats) {
     // 更新总调用次数
-    document.querySelector('.stat-card:nth-child(1) .stat-number').textContent = stats.total_calls;
+    const totalCallsEl = document.querySelector('.stat-card:nth-child(1) .stat-number');
+    animateCounter(totalCallsEl, stats.total_calls);
     
     // 更新今日调用次数
-    document.querySelector('.stat-card:nth-child(2) .stat-number').textContent = stats.daily_calls;
+    const dailyCallsEl = document.querySelector('.stat-card:nth-child(2) .stat-number');
+    animateCounter(dailyCallsEl, stats.daily_calls);
     
     // 更新HTTP方法类型数量
-    document.querySelector('.stat-card:nth-child(3) .stat-number').textContent = Object.keys(stats.method_calls).length;
+    const methodTypesEl = document.querySelector('.stat-card:nth-child(3) .stat-number');
+    const methodCount = Object.keys(stats.method_calls).length;
+    animateCounter(methodTypesEl, methodCount);
     
     // 更新API路径数量
-    document.querySelector('.stat-card:nth-child(4) .stat-number').textContent = Object.keys(stats.path_calls).length;
+    const pathCountEl = document.querySelector('.stat-card:nth-child(4) .stat-number');
+    const pathCount = Object.keys(stats.path_calls).length;
+    animateCounter(pathCountEl, pathCount);
 }
 
 // 更新HTTP方法统计
