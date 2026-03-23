@@ -4,6 +4,21 @@
 
 API密钥用于验证请求的合法性，防止API被滥用。系统支持生成、查看和删除API密钥。
 
+## 启用/禁用API密钥验证
+
+API密钥验证功能可以通过配置文件开关控制：
+
+```yaml
+# config.yaml
+api_key:
+  enabled: true  # true=启用验证，false=禁用验证（所有API无需密钥即可访问）
+```
+
+- `enabled: true`（默认）- 所有API请求需要有效的API密钥
+- `enabled: false` - 所有API请求无需API密钥即可访问（适用于内网或不需要认证的场景）
+
+修改配置后需要重启服务生效。
+
 ## 生成API密钥
 
 1. 访问 http://localhost:8080/api_key

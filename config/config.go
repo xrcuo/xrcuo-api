@@ -26,6 +26,10 @@ type Config struct {
 		} `yaml:"json_format"`
 	} `yaml:"server"`
 
+	APIKey struct {
+		Enabled bool `yaml:"enabled"` // 是否启用API密钥验证
+	} `yaml:"api_key"`
+
 	Database struct {
 		Path         string `yaml:"path"`           // SQLite数据库文件路径
 		MaxOpenConns int    `yaml:"max_open_conns"` // 最大打开连接数
@@ -442,4 +446,14 @@ func GetDownloadPath() string {
 		return "./downloads"
 	}
 	return downloadPath
+}
+
+// IsAPIKeyEnabled 获取是否启用API密钥验证
+func IsAPIKeyEnabled() bool {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil {
+		return true // 默认启用
+	}
+	return config.APIKey.Enabled
 }

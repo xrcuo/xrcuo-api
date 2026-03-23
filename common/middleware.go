@@ -112,6 +112,12 @@ func CORSMiddleware() gin.HandlerFunc {
 // APIKeyMiddleware API密钥验证中间件
 func APIKeyMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		// 如果未启用API密钥验证，则跳过验证
+		if !config.GetInstance().GetConfig().APIKey.Enabled {
+			c.Next()
+			return
+		}
+
 		// 从请求头或查询参数中获取API密钥
 		apiKey := c.GetHeader("Authorization")
 		if apiKey == "" {
