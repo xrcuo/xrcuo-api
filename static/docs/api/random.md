@@ -22,10 +22,11 @@ GET /api/random?min={最小值}&max={最大值}
 ```json
 {
   "code": 200,
-  "message": "success",
+  "msg": "请求成功",
   "data": {
     "random": 42
-  }
+  },
+  "took": "0.123ms"
 }
 ```
 
@@ -33,7 +34,11 @@ GET /api/random?min={最小值}&max={最大值}
 
 | 字段名 | 类型 | 描述 |
 |-------|------|------|
-| `random` | int | 生成的随机整数 |
+| `code` | int | 状态码（200成功，400参数错误，500服务器错误） |
+| `msg` | string | 提示信息 |
+| `data` | object | 随机数数据 |
+| `data.random` | int | 生成的随机整数 |
+| `took` | string | 请求耗时 |
 
 ## 示例请求
 
@@ -46,9 +51,15 @@ curl -H "X-API-Key: your-api-key" http://localhost:8080/api/random?min=1&max=100
 ```json
 {
   "code": 200,
-  "message": "success",
+  "msg": "请求成功",
   "data": {
     "random": 42
-  }
+  },
+  "took": "0.123ms"
 }
 ```
+
+## 注意事项
+
+- 生成的随机数范围为 `[min, max]`，包含两端点
+- 如果不指定参数，默认范围为 `[0, 100]`

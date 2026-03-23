@@ -20,7 +20,7 @@ GET /api/random/image
 
 ### 响应格式
 
-返回图片内容（Content-Type: image/jpeg、image/png 等）
+返回图片内容（Content-Type: image/jpeg、image/png、image/gif、image/webp 等）
 
 ### 示例请求
 
@@ -49,7 +49,6 @@ GET /api/random/image/info
 ```json
 {
   "code": 200,
-  "message": "success",
   "data": {
     "url": "/images/sample.jpg",
     "provider": "local"
@@ -61,8 +60,10 @@ GET /api/random/image/info
 
 | 字段名 | 类型 | 描述 |
 |-------|------|------|
-| `url` | string | 图片URL地址 |
-| `provider` | string | 图片来源：local（本地）/ picsum.photos / unsplash.com / random.imagecdn.app |
+| `code` | int | 状态码 |
+| `data` | object | 图片信息数据 |
+| `data.url` | string | 图片URL地址 |
+| `data.provider` | string | 图片来源：local（本地）/ picsum.photos / unsplash.com / random.imagecdn.app |
 
 ### 示例请求
 
@@ -75,7 +76,6 @@ curl -H "X-API-Key: your-api-key" "http://localhost:8080/api/random/image/info"
 ```json
 {
   "code": 200,
-  "message": "success",
   "data": {
     "url": "/images/photo.jpg",
     "provider": "local"
@@ -95,3 +95,9 @@ random_image:
 
 - 当 `local_enabled` 为 `true` 且本地图片目录有图片时，优先返回本地图片
 - 当本地图片不可用时，自动切换到远程图片源
+
+## 注意事项
+
+- 支持的图片格式：jpg、jpeg、png、gif、webp
+- 本地图片列表会缓存5分钟，减少文件系统访问
+- 远程图片来源：picsum.photos、unsplash.com、random.imagecdn.app

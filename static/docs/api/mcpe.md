@@ -41,14 +41,17 @@ GET /api/mcpe/status?server={服务器地址}&port={端口}
 
 | 字段名 | 类型 | 描述 |
 |-------|------|------|
-| `server_ip` | string | 服务器地址 |
-| `port` | int | 服务器端口 |
-| `online` | int | 当前在线玩家数 |
-| `max_players` | int | 最大玩家数 |
-| `version` | string | 服务器游戏版本 |
-| `motd` | string | 服务器描述（Motd） |
-| `ping_time` | string | 服务器延迟 |
-| `time` | time | 查询时间 |
+| `code` | int | 状态码（200成功，400参数错误，500服务器错误） |
+| `msg` | string | 提示信息 |
+| `data` | object | 服务器状态数据 |
+| `data.server_ip` | string | 服务器地址 |
+| `data.port` | int | 服务器端口 |
+| `data.online` | int | 当前在线玩家数 |
+| `data.max_players` | int | 最大玩家数 |
+| `data.version` | string | 服务器游戏版本 |
+| `data.motd` | string | 服务器描述（Motd） |
+| `data.ping_time` | string | 服务器延迟 |
+| `data.time` | string | 查询时间 |
 | `took` | string | 请求耗时 |
 
 ## 示例请求
@@ -79,12 +82,23 @@ curl -H "X-API-Key: your-api-key" "http://localhost:8080/api/mcpe/status?server=
 
 ## 错误响应
 
-### 参数错误
+### 参数错误（服务器地址为空）
 
 ```json
 {
   "code": 400,
   "msg": "参数错误：服务器地址（server）不能为空",
+  "data": null,
+  "took": "0.123ms"
+}
+```
+
+### 参数错误（端口无效）
+
+```json
+{
+  "code": 400,
+  "msg": "参数错误：端口必须是1-65535之间的整数",
   "data": null,
   "took": "0.123ms"
 }
@@ -100,3 +114,9 @@ curl -H "X-API-Key: your-api-key" "http://localhost:8080/api/mcpe/status?server=
   "took": "5000.123ms"
 }
 ```
+
+## 注意事项
+
+- 默认端口 19132 是 Minecraft PE 的标准端口
+- 如果服务器使用了自定义端口，请确保在请求中指定正确的端口
+- 连接超时时间为 5 秒

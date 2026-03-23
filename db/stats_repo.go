@@ -3,7 +3,6 @@ package db
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/xrcuo/xrcuo-api/models"
@@ -109,19 +108,25 @@ func LoadStats() (*models.Stats, error) {
 
 // SaveStats 保存统计信息到数据库
 func SaveStats(stats *models.Stats) error {
-	// 开启事务
 	tx, err := DB.Begin()
 	if err != nil {
 		return fmt.Errorf("开启事务失败: %v", err)
 	}
 	defer func() {
-		if err != nil {
+		if tx != nil {
 			tx.Rollback()
 		}
 	}()
 
-	// 保存基本统计信息
-	_, err = tx.Exec(
+	if err = saveStatsTx(tx, stats); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}
+
+func saveStatsTx(tx *sql.Tx, stats *models.Stats) error {
+	_, err := tx.Exec(
 		"INSERT OR REPLACE INTO stats (id, total_calls, daily_calls, last_reset_time, updated_at) "+
 			"VALUES ((SELECT id FROM stats ORDER BY updated_at DESC LIMIT 1), ?, ?, ?, ?)",
 		stats.TotalCalls, stats.DailyCalls, stats.LastResetTime, time.Now(),
@@ -130,7 +135,6 @@ func SaveStats(stats *models.Stats) error {
 		return fmt.Errorf("保存基本统计信息失败: %v", err)
 	}
 
-	// 保存HTTP方法统计
 	for method, count := range stats.MethodCalls {
 		_, err = tx.Exec(
 			"INSERT OR REPLACE INTO method_calls (method, count, updated_at) VALUES (?, ?, ?)",
@@ -141,7 +145,6 @@ func SaveStats(stats *models.Stats) error {
 		}
 	}
 
-	// 保存API路径统计
 	for path, count := range stats.PathCalls {
 		_, err = tx.Exec(
 			"INSERT OR REPLACE INTO path_calls (path, count, updated_at) VALUES (?, ?, ?)",
@@ -152,7 +155,6 @@ func SaveStats(stats *models.Stats) error {
 		}
 	}
 
-	// 保存IP统计
 	for ip, count := range stats.IPCalls {
 		_, err = tx.Exec(
 			"INSERT OR REPLACE INTO ip_calls (ip, count, updated_at) VALUES (?, ?, ?)",
@@ -163,17 +165,7 @@ func SaveStats(stats *models.Stats) error {
 		}
 	}
 
-	// 提交事务
-	if err = tx.Commit(); err != nil {
-		return fmt.Errorf("提交事务失败: %v", err)
-	}
-
 	return nil
-}
-
-// SaveCallDetail 保存API调用详情到数据库
-func SaveCallDetail(detail *models.CallDetail) error {
-	return SaveCallDetailsBatch([]*models.CallDetail{detail})
 }
 
 // SaveCallDetailsBatch 批量保存API调用详情到数据库
@@ -182,25 +174,22 @@ func SaveCallDetailsBatch(details []*models.CallDetail) error {
 		return nil
 	}
 
-	// 开启事务
 	tx, err := DB.Begin()
 	if err != nil {
 		return fmt.Errorf("开启事务失败: %v", err)
 	}
 	defer func() {
-		if err != nil {
+		if tx != nil {
 			tx.Rollback()
 		}
 	}()
 
-	// 准备插入语句
 	stmt, err := tx.Prepare("INSERT INTO call_details (path, method, ip, timestamp, status_code) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		return fmt.Errorf("准备插入语句失败: %v", err)
 	}
 	defer stmt.Close()
 
-	// 批量插入数据
 	for _, detail := range details {
 		_, err = stmt.Exec(detail.Path, detail.Method, detail.IP, detail.Timestamp, detail.StatusCode)
 		if err != nil {
@@ -208,20 +197,12 @@ func SaveCallDetailsBatch(details []*models.CallDetail) error {
 		}
 	}
 
-	// 提交事务
 	if err = tx.Commit(); err != nil {
 		return fmt.Errorf("提交事务失败: %v", err)
 	}
 
-	// 保留最近1000条记录，删除旧记录（异步执行，不阻塞主流程）
 	go func() {
-		_, err := DB.Exec(
-			"DELETE FROM call_details WHERE id NOT IN (SELECT id FROM call_details ORDER BY timestamp DESC LIMIT 1000)",
-		)
-		if err != nil {
-			log.Printf("清理旧调用记录失败: %v", err)
-			// 不影响主流程，继续执行
-		}
+		DB.Exec("DELETE FROM call_details WHERE id NOT IN (SELECT id FROM call_details ORDER BY timestamp DESC LIMIT 1000)")
 	}()
 
 	return nil

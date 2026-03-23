@@ -57,3 +57,130 @@ curl http://localhost:8080/api/ip?ip=114.114.114.114&api_key=your-api-key
   "data": null
 }
 ```
+
+## REST API 接口
+
+### 获取所有API密钥
+
+```
+GET /api/api_key
+```
+
+#### 响应格式
+
+```json
+{
+  "code": 200,
+  "data": {
+    "api_keys": [
+      {
+        "id": 1,
+        "name": "测试密钥",
+        "key": "xxxx.xxxx.xxxx",
+        "max_usage": 1000,
+        "current_usage": 50,
+        "is_permanent": true,
+        "created_at": "2024-01-01T00:00:00Z",
+        "updated_at": "2024-01-01T00:00:00Z"
+      }
+    ]
+  }
+}
+```
+
+#### 响应字段说明
+
+| 字段名 | 类型 | 描述 |
+|-------|------|------|
+| `api_keys` | array | API密钥列表 |
+| `api_keys[].id` | int | 密钥ID |
+| `api_keys[].name` | string | 密钥名称 |
+| `api_keys[].key` | string | API密钥（仅创建时返回完整密钥） |
+| `api_keys[].max_usage` | int | 最大使用次数（0表示无限制） |
+| `api_keys[].current_usage` | int | 当前已使用次数 |
+| `api_keys[].is_permanent` | bool | 是否永久有效 |
+| `api_keys[].created_at` | string | 创建时间 |
+| `api_keys[].updated_at` | string | 更新时间 |
+
+### 创建新的API密钥
+
+```
+POST /api/api_key
+```
+
+#### 请求体
+
+```json
+{
+  "name": "新密钥名称",
+  "max_usage": 1000,
+  "is_permanent": true
+}
+```
+
+| 参数名 | 类型 | 必填 | 默认值 | 描述 |
+|-------|------|------|-------|------|
+| `name` | string | 是 | 无 | 密钥名称 |
+| `max_usage` | int | 否 | 0 | 最大使用次数（0表示无限制） |
+| `is_permanent` | bool | 否 | false | 是否永久有效 |
+
+#### 响应格式
+
+```json
+{
+  "code": 201,
+  "data": {
+    "api_key": {
+      "id": 2,
+      "name": "新密钥名称",
+      "key": "abc123.def456.ghi789",
+      "max_usage": 1000,
+      "current_usage": 0,
+      "is_permanent": true,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    }
+  }
+}
+```
+
+### 删除API密钥
+
+```
+DELETE /api/api_key/:id
+```
+
+#### 响应格式
+
+```json
+{
+  "code": 200,
+  "data": {
+    "message": "API密钥删除成功"
+  }
+}
+```
+
+### 错误响应
+
+#### 参数无效
+
+```json
+{
+  "code": 400,
+  "data": {
+    "error": "请求参数无效"
+  }
+}
+```
+
+#### 内部错误
+
+```json
+{
+  "code": 500,
+  "data": {
+    "error": "创建API密钥失败"
+  }
+}
+```
