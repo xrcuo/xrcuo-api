@@ -14,6 +14,7 @@ import (
 	"github.com/xrcuo/xrcuo-api/db"
 	"github.com/xrcuo/xrcuo-api/log"
 	"github.com/xrcuo/xrcuo-api/plugin"
+	"github.com/xrcuo/xrcuo-api/plugin/download"
 )
 
 //go:embed static
@@ -173,6 +174,18 @@ func registerRoutes(r *gin.Engine) {
 		pluginManager.RegisterAll(apiGroup)
 	}
 
+	// 注册下载路由（不需要API密钥验证）
+	downloadGroup := r.Group("/download")
+	{
+		downloadGroup.GET("/*filepath", download.DownloadHandler)
+	}
+
+	// 注册API下载路由（不需要API密钥验证）
+	apiDownloadGroup := r.Group("/api/download")
+	{
+		apiDownloadGroup.GET("/*filepath", download.DownloadHandler)
+	}
+
 	// 注册API密钥管理路由（不需要API密钥验证）
 	authGroup := r.Group("/auth")
 	{
@@ -226,8 +239,6 @@ func main() {
 		}
 		// 停止配置文件监听
 		config.GetInstance().StopWatching()
-		// 停止API密钥缓存清理任务
-		common.StopAPICacheCleanup()
 	}()
 
 	// 设置Gin引擎和中间件

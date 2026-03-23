@@ -25,6 +25,10 @@ random_image:
   local_enabled: false  # 是否启用本地图片
   local_path: "images/"  # 本地图片目录路径
 
+# 下载配置
+download:
+  path: "downloads/"  # 下载文件目录路径
+
 # 数据库配置
 database:
   path: "./stats.db"  # SQLite数据库文件路径

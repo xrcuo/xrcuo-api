@@ -16,3 +16,4 @@ logs/
 go.work
 go.work.sum
 .trae
+downloads/

@@ -28,12 +28,6 @@ func GetAPICache() *cache.Cache {
 	return apiKeyCacheInstance
 }
 
-// StopAPICacheCleanup 停止API密钥缓存的定期清理任务（go-cache不需要单独的清理任务，内部自动处理）
-func StopAPICacheCleanup() {
-	// go-cache内部自动处理清理，不需要单独停止
-	logrus.Debug("API密钥缓存清理任务已停止")
-}
-
 // RequestLoggerMiddleware 请求日志中间件
 func RequestLoggerMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -7,6 +7,7 @@ import (
 	"github.com/xrcuo/xrcuo-api/plugin/client"
 	"github.com/xrcuo/xrcuo-api/plugin/ip"
 	"github.com/xrcuo/xrcuo-api/plugin/ipify"
+	"github.com/xrcuo/xrcuo-api/plugin/mcpe"
 	"github.com/xrcuo/xrcuo-api/plugin/ping"
 	"github.com/xrcuo/xrcuo-api/plugin/random"
 )
@@ -142,6 +143,7 @@ func (pm *PluginManager) RegisterBuiltinPlugins() {
 	pm.Register(random.RandomPlugin)
 	pm.Register(client.ClientPlugin)
 	pm.Register(ipify.IpifyPlugin)
+	pm.Register(mcpe.MCPEPlugin)
 }
 
 // RegisterAPIRouter 注册API密钥管理路由

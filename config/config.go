@@ -51,6 +51,10 @@ type Config struct {
 		LocalEnabled bool   `yaml:"local_enabled"` // 是否启用本地图片
 		LocalPath    string `yaml:"local_path"`    // 本地图片目录路径
 	} `yaml:"random_image"`
+
+	Download struct {
+		Path string `yaml:"path"` // 下载文件目录路径
+	} `yaml:"download"`
 }
 
 // ConfigUpdateCallback 配置更新回调函数类型
@@ -423,4 +427,19 @@ func GetLogLevel() string {
 		return "info"
 	}
 	return config.Log.Level
+}
+
+// GetDownloadPath 获取下载文件目录路径
+func GetDownloadPath() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil || config.Download.Path == "" {
+		return "./downloads"
+	}
+	downloadPath := config.Download.Path
+	if err := os.MkdirAll(downloadPath, 0755); err != nil {
+		logrus.Warnf("创建下载目录失败: %v, 使用默认目录", err)
+		return "./downloads"
+	}
+	return downloadPath
 }
