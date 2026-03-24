@@ -35,7 +35,9 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
+
+const baseUrl = window.location.origin
 
 const apiList = ref([
   {
@@ -81,7 +83,6 @@ const apiList = ref([
 ])
 
 const getExampleUrl = (api) => {
-  const baseUrl = 'http://localhost:8080'
   const examples = {
     '/api/ip': `${baseUrl}/api/ip?ip=114.114.114.114`,
     '/api/ipify': `${baseUrl}/api/ipify`,
