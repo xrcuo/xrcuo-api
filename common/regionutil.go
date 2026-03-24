@@ -2,6 +2,10 @@ package common
 
 import (
 	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/lionsoul2014/ip2region/binding/golang/service"
@@ -26,6 +30,16 @@ func InitIP2Region() error {
 	v6DBPath := config.GetIP2RegionV6DBPath()
 
 	logrus.Infof("开始初始化IP2Region服务: IPv4路径: %s, IPv6路径: %s", v4DBPath, v6DBPath)
+
+	// 检查并下载 IPv4 数据库文件
+	if err := checkAndDownloadDB(v4DBPath, "IPv4"); err != nil {
+		return fmt.Errorf("检查/下载IPv4数据库失败: %v", err)
+	}
+
+	// 检查并下载 IPv6 数据库文件（IPv6是可选的，失败不影响启动）
+	if err := checkAndDownloadDB(v6DBPath, "IPv6"); err != nil {
+		logrus.Warnf("检查/下载IPv6数据库失败，将仅使用IPv4: %v", err)
+	}
 
 	// 创建v4配置：指定缓存策略和v4的xdb文件路径
 	v4Config, err := service.NewV4Config(service.VIndexCache, v4DBPath, 20)
@@ -124,4 +138,64 @@ func JoinNonEmpty(strs []string, sep string) string {
 		}
 	}
 	return strings.Join(result, sep)
+}
+
+// downloadFile 下载文件到指定路径
+func downloadFile(url, filePath string) error {
+	logrus.Infof("正在下载文件: %s -> %s", url, filePath)
+	
+	resp, err := http.Get(url)
+	if err != nil {
+		return fmt.Errorf("下载请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+	
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("下载失败，HTTP状态码: %d", resp.StatusCode)
+	}
+	
+	dir := filepath.Dir(filePath)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return fmt.Errorf("创建目录失败: %v", err)
+	}
+	
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("创建文件失败: %v", err)
+	}
+	defer file.Close()
+	
+	_, err = io.Copy(file, resp.Body)
+	if err != nil {
+		return fmt.Errorf("写入文件失败: %v", err)
+	}
+	
+	logrus.Infof("文件下载成功: %s", filePath)
+	return nil
+}
+
+// checkAndDownloadDB 检查数据库文件是否存在，不存在则自动下载
+func checkAndDownloadDB(dbPath, dbType string) error {
+	if _, err := os.Stat(dbPath); err == nil {
+		logrus.Infof("%s数据库文件已存在: %s", dbType, dbPath)
+		return nil
+	}
+	
+	logrus.Warnf("%s数据库文件不存在，准备自动下载: %s", dbType, dbPath)
+	
+	var downloadURL string
+	switch dbType {
+	case "IPv4":
+		downloadURL = "https://github.com/lionsoul2014/ip2region/raw/master/data/ip2region_v4.xdb"
+	case "IPv6":
+		downloadURL = "https://github.com/lionsoul2014/ip2region/raw/master/data/ip2region_v6.xdb"
+	default:
+		return fmt.Errorf("未知的数据库类型: %s", dbType)
+	}
+	
+	if err := downloadFile(downloadURL, dbPath); err != nil {
+		return fmt.Errorf("下载%s数据库失败: %v", dbType, err)
+	}
+	
+	return nil
 }
