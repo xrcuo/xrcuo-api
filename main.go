@@ -19,6 +19,7 @@ import (
 
 //go:embed static
 //go:embed templates
+//go:embed admin/dist
 var embeddedFiles embed.FS
 
 // 全局插件管理器实例，用于在程序退出时清理资源
@@ -200,9 +201,18 @@ func registerRoutes(r *gin.Engine) {
 	// 添加API密钥管理页面路由
 	r.GET("/api_key", common.APIKeyHandler)
 
-	// 根路径重定向到docs
+	// Vue3管理后台路由 - SPA应用使用hash模式
+	// 获取admin/dist子目录
+	adminFS, err := fs.Sub(embeddedFiles, "admin/dist")
+	if err != nil {
+		logrus.Fatalf("获取admin/dist子目录失败：%v", err)
+	}
+	// 使用嵌入式文件系统提供admin静态资源
+	r.StaticFS("/admin", http.FS(adminFS))
+
+	// 根路径重定向到admin管理后台
 	r.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/docs/")
+		c.Redirect(http.StatusMovedPermanently, "/admin/")
 	})
 }
 
@@ -210,9 +220,9 @@ func registerRoutes(r *gin.Engine) {
 func startServer(r *gin.Engine) {
 	port := config.GetServerPort()
 	logrus.Infof("服务启动成功，监听地址：http://localhost%s", port)
+	logrus.Infof("管理后台：http://localhost%s/admin/", port)
 	logrus.Infof("IP接口示例：http://localhost%s/api/ip?ip=114.114.114.114", port)
 	logrus.Infof("Ping接口示例：http://localhost%s/api/ping?target=www.baidu.com&count=3", port)
-	logrus.Infof("统计页面：http://localhost%s/stats", port)
 
 	if err := r.Run(port); err != nil {
 		logrus.Fatalf("服务启动失败：%v", err)
