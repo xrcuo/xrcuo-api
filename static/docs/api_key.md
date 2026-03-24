@@ -21,8 +21,8 @@ api_key:
 
 ## 生成API密钥
 
-1. 访问 http://localhost:8080/api_key
-2. 点击 "生成新密钥" 按钮
+1. 访问 YOUR_DOMAIN/admin/#/api-keys
+2. 点击 "创建新API Key" 按钮
 3. 复制生成的API密钥
 
 ## 使用API密钥
@@ -30,18 +30,18 @@ api_key:
 ### 在请求头中使用
 
 ```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8080/api/ip?ip=114.114.114.114
+curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/ip?ip=114.114.114.114
 ```
 
 ### 在查询参数中使用
 
 ```bash
-curl http://localhost:8080/api/ip?ip=114.114.114.114&api_key=your-api-key
+curl YOUR_DOMAIN/api/ip?ip=114.114.114.114&api_key=your-api-key
 ```
 
 ## 管理API密钥
 
-1. 访问 http://localhost:8080/api_key
+1. 访问 YOUR_DOMAIN/admin/#/api-keys
 2. 查看所有已生成的API密钥
 3. 点击 "删除" 按钮删除不再使用的API密钥
 

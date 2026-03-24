@@ -35,10 +35,10 @@ GET /download/{filepath}
 
 ```bash
 # 方式一：使用查询参数
-curl -O "http://localhost:8080/download?file=ccmsi.lua"
+curl -O "YOUR_DOMAIN/download?file=ccmsi.lua"
 
 # 方式二：使用路径参数
-curl -O http://localhost:8080/download/ccmsi.lua
+curl -O YOUR_DOMAIN/download/ccmsi.lua
 ```
 
 ## 错误响应

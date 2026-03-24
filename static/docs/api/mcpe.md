@@ -57,7 +57,7 @@ GET /api/mcpe/status?server={服务器地址}&port={端口}
 ## 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" "http://localhost:8080/api/mcpe/status?server=play.example.com&port=19132"
+curl -H "X-API-Key: your-api-key" "YOUR_DOMAIN/api/mcpe/status?server=play.example.com&port=19132"
 ```
 
 ## 示例响应

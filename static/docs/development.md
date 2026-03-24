@@ -73,7 +73,7 @@ pluginManager.Register(myplugin.MyPlugin) // 添加这一行
 
 ```bash
 go run main.go
-curl -H "X-API-Key: your-api-key" http://localhost:8080/api/myplugin
+curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/myplugin
 ```
 
 ## 插件开发规范

@@ -42,9 +42,9 @@
    ```
 
 4. **访问服务**
-   - API 文档：http://localhost:8080/docs
-   - 统计页面：http://localhost:8080/stats
-   - API 密钥管理：http://localhost:8080/api_key
+   - API 文档：YOUR_DOMAIN/docs
+   - 管理后台：YOUR_DOMAIN/admin
+   - API 密钥管理：YOUR_DOMAIN/admin/#/api-keys
 
 ## API 列表
 
@@ -67,8 +67,8 @@
 
 ### 生成 API 密钥
 
-1. 访问 http://localhost:8080/api_key
-2. 点击 "生成新密钥" 按钮
+1. 访问 YOUR_DOMAIN/admin/#/api-keys
+2. 点击 "创建新API Key" 按钮
 3. 复制生成的 API 密钥
 
 ### 使用 API 密钥
@@ -76,13 +76,13 @@
 在请求头中添加 `Authorization` 字段：
 
 ```bash
-curl -H "Authorization: your-api-key" http://localhost:8080/api/ip?ip=114.114.114.114
+curl -H "Authorization: your-api-key" YOUR_DOMAIN/api/ip?ip=114.114.114.114
 ```
 
 或者作为查询参数：
 
 ```bash
-curl http://localhost:8080/api/ip?ip=114.114.114.114&api_key=your-api-key
+curl YOUR_DOMAIN/api/ip?ip=114.114.114.114&api_key=your-api-key
 ```
 
 ## 通用 API 格式

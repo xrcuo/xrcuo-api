@@ -25,7 +25,7 @@ GET /api/ipify
 ## 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8080/api/ipify
+curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/ipify
 ```
 
 ## 示例响应

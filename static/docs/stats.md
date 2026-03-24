@@ -6,7 +6,7 @@
 
 ## 查看统计信息
 
-1. 访问 http://localhost:8080/stats
+1. 访问 YOUR_DOMAIN/admin/#/（仪表盘页面）
 2. 查看API请求的统计数据
 3. 可以按API路径和状态码筛选统计结果
 
@@ -64,7 +64,7 @@ GET /api/stats
 ### 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8080/api/stats
+curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/stats
 ```
 
 ### 示例响应

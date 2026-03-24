@@ -73,7 +73,7 @@ GET /api/ping?target={目标地址}&timeout={超时时间}&count={Ping次数}
 ## 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8080/api/ping?target=www.baidu.com&count=4
+curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/ping?target=www.baidu.com&count=4
 ```
 
 ## 示例响应
