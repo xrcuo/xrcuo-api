@@ -88,7 +88,7 @@ var (
 func GetInstance() *ConfigManager {
 	once.Do(func() {
 		instance = &ConfigManager{
-			stopChan: make(chan struct{}),
+			stopChan: make(chan struct{}, 1),
 		}
 	})
 	return instance
@@ -338,7 +338,10 @@ func (cm *ConfigManager) StopWatching() {
 		return
 	}
 
-	cm.stopChan <- struct{}{}
+	select {
+	case cm.stopChan <- struct{}{}:
+	default:
+	}
 	cm.isWatching = false
 	logrus.Info("配置文件监听已停止")
 }

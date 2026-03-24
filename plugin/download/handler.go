@@ -2,6 +2,7 @@ package download
 
 import (
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -28,8 +29,46 @@ func DownloadHandler(c *gin.Context) {
 
 	downloadPath := config.GetDownloadPath()
 
-	fullPath := filepath.Join(downloadPath, filePath)
-	logrus.Debugf("下载请求: %s, IP: %s", fullPath, c.ClientIP())
+	cleanFilePath := filepath.Clean(filePath)
+	fullPath := filepath.Join(downloadPath, cleanFilePath)
 
-	c.File(fullPath)
+	absDownloadPath, err := filepath.Abs(downloadPath)
+	if err != nil {
+		logrus.Errorf("获取下载目录绝对路径失败: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "服务器内部错误"})
+		return
+	}
+
+	absFullPath, err := filepath.Abs(fullPath)
+	if err != nil {
+		logrus.Errorf("获取文件绝对路径失败: %v", err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的文件路径"})
+		return
+	}
+
+	if !strings.HasPrefix(absFullPath, absDownloadPath+string(os.PathSeparator)) && absFullPath != absDownloadPath {
+		logrus.Warnf("路径遍历攻击尝试: %s, IP: %s", filePath, c.ClientIP())
+		c.JSON(http.StatusForbidden, gin.H{"error": "禁止访问"})
+		return
+	}
+
+	fileInfo, err := os.Stat(absFullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "文件不存在"})
+			return
+		}
+		logrus.Errorf("获取文件信息失败: %v", err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "服务器内部错误"})
+		return
+	}
+
+	if fileInfo.IsDir() {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "不能下载目录"})
+		return
+	}
+
+	logrus.Debugf("下载请求: %s, IP: %s", absFullPath, c.ClientIP())
+
+	c.File(absFullPath)
 }

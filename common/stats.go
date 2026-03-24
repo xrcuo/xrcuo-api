@@ -62,33 +62,8 @@ func InitStats() {
 
 // RecordCall 记录API调用
 func (s *Stats) RecordCall(path, method, ip string, statusCode int) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-
-	// 增加总调用次数
-	s.TotalCalls++
-
-	// 增加HTTP方法调用次数
-	s.MethodCalls[method]++
-
-	// 增加API路径调用次数
-	s.PathCalls[path]++
-
-	// 增加IP调用次数
-	s.IPCalls[ip]++
-
-	// 记录当前时间
 	now := time.Now()
 
-	// 检查是否需要重置日统计
-	if now.Day() != s.LastResetTime.Day() {
-		s.DailyCalls = 1
-		s.LastResetTime = now
-	} else {
-		s.DailyCalls++
-	}
-
-	// 记录最近调用详情
 	detail := &models.CallDetail{
 		Path:       path,
 		Method:     method,
@@ -97,23 +72,42 @@ func (s *Stats) RecordCall(path, method, ip string, statusCode int) {
 		StatusCode: statusCode,
 	}
 
-	// 保持最多100条记录
+	// 快速更新核心统计数据
+	s.mu.Lock()
+	s.TotalCalls++
+	s.MethodCalls[method]++
+	s.PathCalls[path]++
+	s.IPCalls[ip]++
+
+	if !isSameDay(now, s.LastResetTime) {
+		s.DailyCalls = 1
+		s.LastResetTime = now
+	} else {
+		s.DailyCalls++
+	}
+
 	if len(s.LastCallDetails) >= 100 {
-		// 移除最旧的记录
 		s.LastCallDetails = s.LastCallDetails[1:]
 	}
 	s.LastCallDetails = append(s.LastCallDetails, detail)
+	s.mu.Unlock()
 
-	// 将调用详情添加到缓冲区
+	// 缓冲区操作使用独立的锁
 	s.bufferMutex.Lock()
 	s.callDetailBuffer = append(s.callDetailBuffer, detail)
 	bufferSize := len(s.callDetailBuffer)
 	s.bufferMutex.Unlock()
 
-	// 当缓冲区达到最大大小时，异步批量写入数据库
 	if bufferSize >= s.maxBufferSize {
 		go s.flushCallDetailBuffer()
 	}
+}
+
+// isSameDay 判断两个时间是否为同一天
+func isSameDay(t1, t2 time.Time) bool {
+	y1, m1, d1 := t1.Date()
+	y2, m2, d2 := t2.Date()
+	return y1 == y2 && m1 == m2 && d1 == d2
 }
 
 // flushCallDetailBuffer 将缓冲区中的调用详情批量写入数据库

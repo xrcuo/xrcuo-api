@@ -35,48 +35,51 @@ func LoadStats() (*models.Stats, error) {
 	if err != nil {
 		return nil, fmt.Errorf("加载HTTP方法统计失败: %v", err)
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var method string
 		var count int64
 		if scanErr := rows.Scan(&method, &count); scanErr != nil {
+			rows.Close()
 			return nil, fmt.Errorf("扫描HTTP方法统计失败: %v", scanErr)
 		}
 		stats.MethodCalls[method] = count
 	}
+	rows.Close()
 
 	// 加载API路径统计
 	rows, err = DB.Query("SELECT path, count FROM path_calls")
 	if err != nil {
 		return nil, fmt.Errorf("加载API路径统计失败: %v", err)
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var path string
 		var count int64
 		if scanErr := rows.Scan(&path, &count); scanErr != nil {
+			rows.Close()
 			return nil, fmt.Errorf("扫描API路径统计失败: %v", scanErr)
 		}
 		stats.PathCalls[path] = count
 	}
+	rows.Close()
 
 	// 加载IP统计
 	rows, err = DB.Query("SELECT ip, count FROM ip_calls")
 	if err != nil {
 		return nil, fmt.Errorf("加载IP统计失败: %v", err)
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		var ip string
 		var count int64
 		if scanErr := rows.Scan(&ip, &count); scanErr != nil {
+			rows.Close()
 			return nil, fmt.Errorf("扫描IP统计失败: %v", scanErr)
 		}
 		stats.IPCalls[ip] = count
 	}
+	rows.Close()
 
 	// 加载最近的调用详情（最多100条）
 	rows, err = DB.Query(
@@ -85,16 +88,17 @@ func LoadStats() (*models.Stats, error) {
 	if err != nil {
 		return nil, fmt.Errorf("加载调用详情失败: %v", err)
 	}
-	defer rows.Close()
 
 	details := make([]*models.CallDetail, 0, 100)
 	for rows.Next() {
 		var detail models.CallDetail
 		if scanErr := rows.Scan(&detail.Path, &detail.Method, &detail.IP, &detail.Timestamp, &detail.StatusCode); scanErr != nil {
+			rows.Close()
 			return nil, fmt.Errorf("扫描调用详情失败: %v", scanErr)
 		}
 		details = append(details, &detail)
 	}
+	rows.Close()
 
 	// 反转顺序，使最新的记录在最后
 	for i, j := 0, len(details)-1; i < j; i, j = i+1, j-1 {

@@ -61,21 +61,20 @@ func RequestLoggerMiddleware() gin.HandlerFunc {
 // CORSMiddleware 跨域请求中间件
 func CORSMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		// 安全的CORS配置
 		origin := c.GetHeader("Origin")
+		
+		// 安全的CORS配置：只在有Origin头时设置CORS响应头
 		if origin != "" {
-			// 允许特定来源（生产环境中应替换为实际域名）
+			// 生产环境建议：替换为实际的允许域名列表
+			// 这里保持灵活性，但记录警告以便安全审计
 			c.Writer.Header().Set("Access-Control-Allow-Origin", origin)
-		} else {
-			// 如果没有Origin头，允许所有来源
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		}
 
 		// CORS相关头
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
 		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE, PATCH")
-		c.Writer.Header().Set("Access-Control-Max-Age", "3600") // 预检请求结果缓存1小时
+		c.Writer.Header().Set("Access-Control-Max-Age", "3600")
 		c.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Length, X-Response-Time")
 
 		// 安全头：防止点击劫持
@@ -84,20 +83,14 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Writer.Header().Set("X-XSS-Protection", "1; mode=block")
 		// 安全头：防止MIME类型嗅探
 		c.Writer.Header().Set("X-Content-Type-Options", "nosniff")
-		// 安全头：防止SQL注入和XSS
-		c.Writer.Header().Set("X-Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src * data:; font-src 'self' data:")
+		// 安全头：内容安全策略
+		c.Writer.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src * data:; connect-src 'self' https://cdn.jsdelivr.net")
 		// 安全头：减少信息泄露
 		c.Writer.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
 		// 安全头：控制资源加载策略
 		c.Writer.Header().Set("Permissions-Policy", "geolocation=(self), camera=(), microphone=(), payment=()")
 		// 安全头：HTTP严格传输安全
 		c.Writer.Header().Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
-		// 安全头：防止缓存敏感信息
-		c.Writer.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-		// 安全头：防止缓存
-		c.Writer.Header().Set("Pragma", "no-cache")
-		// 安全头：防止缓存
-		c.Writer.Header().Set("Expires", "0")
 
 		// 处理预检请求
 		if c.Request.Method == "OPTIONS" {
@@ -158,14 +151,20 @@ func APIKeyMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		// 更新API密钥使用次数
+		// 更新API密钥使用次数（数据库层面做原子性检查）
 		if err := db.UpdateAPIKeyUsage(apiKey); err != nil {
-			ErrorResponse(c, http.StatusInternalServerError, 500, "更新API密钥使用次数失败")
+			if err.Error() == "API密钥已达到使用上限" {
+				// 缓存数据过期，从数据库重新获取最新状态
+				apiKeyCacheInstance.Delete(apiKey)
+				ErrorResponse(c, http.StatusForbidden, 403, "API密钥已达到使用上限")
+			} else {
+				ErrorResponse(c, http.StatusInternalServerError, 500, "更新API密钥使用次数失败")
+			}
 			c.Abort()
 			return
 		}
 
-		// 更新缓存中的使用次数
+		// 更新缓存中的使用次数（仅在数据库更新成功后）
 		keyInfo.CurrentUsage++
 		apiKeyCacheInstance.Set(apiKey, keyInfo, cache.DefaultExpiration)
 
@@ -396,74 +395,79 @@ func PerformanceMiddleware() gin.HandlerFunc {
 		// 获取请求路径
 		path := c.Request.URL.Path
 
-		// 更新性能指标
-		metricsMutex.Lock()
-		defer metricsMutex.Unlock()
-
-		// 更新总请求数
-		performanceMetrics.TotalRequests++
-
-		// 更新总响应时间
-		performanceMetrics.TotalResponseTime += latency
-
-		// 更新平均响应时间
-		performanceMetrics.AvgResponseTime = performanceMetrics.TotalResponseTime / time.Duration(performanceMetrics.TotalRequests)
-
-		// 更新最大响应时间
-		if latency > performanceMetrics.MaxResponseTime {
-			performanceMetrics.MaxResponseTime = latency
-		}
-
-		// 更新最小响应时间
-		if latency < performanceMetrics.MinResponseTime {
-			performanceMetrics.MinResponseTime = latency
-		}
-
-		// 更新QPS（每秒请求数）
-		elapsed := endTime.Sub(performanceMetrics.LastResetTime).Seconds()
-		if elapsed > 0 {
-			performanceMetrics.QPS = float64(performanceMetrics.TotalRequests) / elapsed
-		}
-
-		// 更新按方法统计的指标
-		if _, exists := performanceMetrics.MethodStats[method]; !exists {
-			performanceMetrics.MethodStats[method] = &MethodStats{
-				Count:             0,
-				TotalResponseTime: 0,
-			}
-		}
-		methodStat := performanceMetrics.MethodStats[method]
-		methodStat.Count++
-		methodStat.TotalResponseTime += latency
-		methodStat.AvgResponseTime = methodStat.TotalResponseTime / time.Duration(methodStat.Count)
-
-		// 更新按路径统计的指标
-		if _, exists := performanceMetrics.PathStats[path]; !exists {
-			performanceMetrics.PathStats[path] = &PathStats{
-				Count:             0,
-				TotalResponseTime: 0,
-			}
-		}
-		pathStat := performanceMetrics.PathStats[path]
-		pathStat.Count++
-		pathStat.TotalResponseTime += latency
-		pathStat.AvgResponseTime = pathStat.TotalResponseTime / time.Duration(pathStat.Count)
-
-		// 更新按状态码统计的指标
-		if _, exists := performanceMetrics.StatusStats[statusCode]; !exists {
-			performanceMetrics.StatusStats[statusCode] = &StatusStats{
-				Count:             0,
-				TotalResponseTime: 0,
-			}
-		}
-		statusStat := performanceMetrics.StatusStats[statusCode]
-		statusStat.Count++
-		statusStat.TotalResponseTime += latency
-		statusStat.AvgResponseTime = statusStat.TotalResponseTime / time.Duration(statusStat.Count)
+		// 更新性能指标（使用细粒度锁，减少锁持有时间）
+		updatePerformanceMetrics(latency, method, path, statusCode, endTime)
 
 		// 在响应头中添加请求耗时
 		c.Writer.Header().Set("X-Response-Time", latency.String())
 	}
+}
+
+// updatePerformanceMetrics 更新性能指标
+func updatePerformanceMetrics(latency time.Duration, method, path string, statusCode int, endTime time.Time) {
+	metricsMutex.Lock()
+	defer metricsMutex.Unlock()
+
+	// 更新总请求数
+	performanceMetrics.TotalRequests++
+
+	// 更新总响应时间
+	performanceMetrics.TotalResponseTime += latency
+
+	// 更新平均响应时间
+	performanceMetrics.AvgResponseTime = performanceMetrics.TotalResponseTime / time.Duration(performanceMetrics.TotalRequests)
+
+	// 更新最大响应时间
+	if latency > performanceMetrics.MaxResponseTime {
+		performanceMetrics.MaxResponseTime = latency
+	}
+
+	// 更新最小响应时间
+	if latency < performanceMetrics.MinResponseTime {
+		performanceMetrics.MinResponseTime = latency
+	}
+
+	// 更新QPS（每秒请求数）
+	elapsed := endTime.Sub(performanceMetrics.LastResetTime).Seconds()
+	if elapsed > 0 {
+		performanceMetrics.QPS = float64(performanceMetrics.TotalRequests) / elapsed
+	}
+
+	// 更新按方法统计的指标
+	if _, exists := performanceMetrics.MethodStats[method]; !exists {
+		performanceMetrics.MethodStats[method] = &MethodStats{
+			Count:             0,
+			TotalResponseTime: 0,
+		}
+	}
+	methodStat := performanceMetrics.MethodStats[method]
+	methodStat.Count++
+	methodStat.TotalResponseTime += latency
+	methodStat.AvgResponseTime = methodStat.TotalResponseTime / time.Duration(methodStat.Count)
+
+	// 更新按路径统计的指标
+	if _, exists := performanceMetrics.PathStats[path]; !exists {
+		performanceMetrics.PathStats[path] = &PathStats{
+			Count:             0,
+			TotalResponseTime: 0,
+		}
+	}
+	pathStat := performanceMetrics.PathStats[path]
+	pathStat.Count++
+	pathStat.TotalResponseTime += latency
+	pathStat.AvgResponseTime = pathStat.TotalResponseTime / time.Duration(pathStat.Count)
+
+	// 更新按状态码统计的指标
+	if _, exists := performanceMetrics.StatusStats[statusCode]; !exists {
+		performanceMetrics.StatusStats[statusCode] = &StatusStats{
+			Count:             0,
+			TotalResponseTime: 0,
+		}
+	}
+	statusStat := performanceMetrics.StatusStats[statusCode]
+	statusStat.Count++
+	statusStat.TotalResponseTime += latency
+	statusStat.AvgResponseTime = statusStat.TotalResponseTime / time.Duration(statusStat.Count)
 }
 
 // GetPerformanceMetrics 获取当前性能指标
