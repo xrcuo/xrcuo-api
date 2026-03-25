@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"github.com/xrcuo/xrcuo-api/config"
 	_ "modernc.org/sqlite"
@@ -15,21 +17,28 @@ var DB *sql.DB
 // InitDB 初始化数据库连接
 func InitDB() error {
 	var err error
+	dbType := config.GetDatabaseType()
 
-	// 获取配置的数据库路径
-	dbPath := config.GetDatabasePath()
+	switch dbType {
+	case "sqlite":
+		err = initSQLite()
+	case "mysql":
+		err = initMySQL()
+	case "postgresql":
+		err = initPostgreSQL()
+	default:
+		return fmt.Errorf("不支持的数据库类型: %s", dbType)
+	}
 
-	// 创建或打开SQLite数据库文件
-	DB, err = sql.Open("sqlite", dbPath)
 	if err != nil {
-		return fmt.Errorf("打开数据库失败: %v", err)
+		return err
 	}
 
 	// 配置连接池
-	DB.SetMaxOpenConns(config.GetMaxOpenConns()) // 最大打开连接数
-	DB.SetMaxIdleConns(config.GetMaxIdleConns()) // 最大空闲连接数
-	DB.SetConnMaxLifetime(-1)                    // 连接最大生命周期（-1表示无限制）
-	DB.SetConnMaxIdleTime(10 * time.Minute)      // 空闲连接最大生命周期
+	DB.SetMaxOpenConns(config.GetMaxOpenConns())
+	DB.SetMaxIdleConns(config.GetMaxIdleConns())
+	DB.SetConnMaxLifetime(-1)
+	DB.SetConnMaxIdleTime(10 * time.Minute)
 
 	logrus.Debug("数据库连接池配置完成")
 
@@ -43,16 +52,81 @@ func InitDB() error {
 		return fmt.Errorf("创建表结构失败: %v", err)
 	}
 
-	logrus.Info("数据库初始化成功")
+	logrus.Infof("数据库初始化成功 (类型: %s)", dbType)
 	return nil
 }
 
-// createTables 创建数据库表结构
-func createTables() error {
-	// 创建表结构的SQL语句列表
-	createTableSQLs := []string{
-		// 统计信息表
-		`
+func initSQLite() error {
+	dbPath := config.GetDatabasePath()
+	var err error
+	DB, err = sql.Open("sqlite", dbPath)
+	if err != nil {
+		return fmt.Errorf("打开SQLite数据库失败: %v", err)
+	}
+	return nil
+}
+
+func initMySQL() error {
+	host := config.GetDatabaseHost()
+	port := config.GetDatabasePort()
+	user := config.GetDatabaseUser()
+	password := config.GetDatabasePassword()
+	dbname := config.GetDatabaseName()
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		user, password, host, port, dbname)
+
+	var err error
+	DB, err = sql.Open("mysql", dsn)
+	if err != nil {
+		return fmt.Errorf("打开MySQL数据库失败: %v", err)
+	}
+	return nil
+}
+
+func initPostgreSQL() error {
+	host := config.GetDatabaseHost()
+	port := config.GetDatabasePort()
+	user := config.GetDatabaseUser()
+	password := config.GetDatabasePassword()
+	dbname := config.GetDatabaseName()
+
+	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		host, port, user, password, dbname)
+
+	var err error
+	DB, err = sql.Open("postgres", dsn)
+	if err != nil {
+		return fmt.Errorf("打开PostgreSQL数据库失败: %v", err)
+	}
+	return nil
+}
+
+func getSQLForTable(tableName string) string {
+	dbType := config.GetDatabaseType()
+
+	switch tableName {
+	case "stats":
+		return getStatsTableSQL(dbType)
+	case "method_calls":
+		return getMethodCallsTableSQL(dbType)
+	case "path_calls":
+		return getPathCallsTableSQL(dbType)
+	case "ip_calls":
+		return getIPCallsTableSQL(dbType)
+	case "call_details":
+		return getCallDetailsTableSQL(dbType)
+	case "api_keys":
+		return getAPIKeysTableSQL(dbType)
+	default:
+		return ""
+	}
+}
+
+func getStatsTableSQL(dbType string) string {
+	switch dbType {
+	case "sqlite":
+		return `
 		CREATE TABLE IF NOT EXISTS stats (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			total_calls INTEGER NOT NULL DEFAULT 0,
@@ -61,9 +135,38 @@ func createTables() error {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
-		`,
-		// HTTP方法统计表
 		`
+	case "mysql":
+		return `
+		CREATE TABLE IF NOT EXISTS stats (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			total_calls INT NOT NULL DEFAULT 0,
+			daily_calls INT NOT NULL DEFAULT 0,
+			last_reset_time DATETIME NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+		`
+	case "postgresql":
+		return `
+		CREATE TABLE IF NOT EXISTS stats (
+			id SERIAL PRIMARY KEY,
+			total_calls INTEGER NOT NULL DEFAULT 0,
+			daily_calls INTEGER NOT NULL DEFAULT 0,
+			last_reset_time TIMESTAMP NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+		`
+	default:
+		return ""
+	}
+}
+
+func getMethodCallsTableSQL(dbType string) string {
+	switch dbType {
+	case "sqlite":
+		return `
 		CREATE TABLE IF NOT EXISTS method_calls (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			method TEXT NOT NULL,
@@ -72,9 +175,38 @@ func createTables() error {
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE(method)
 		);
-		`,
-		// API路径统计表
 		`
+	case "mysql":
+		return `
+		CREATE TABLE IF NOT EXISTS method_calls (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			method VARCHAR(255) NOT NULL,
+			count INT NOT NULL DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			UNIQUE KEY (method)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+		`
+	case "postgresql":
+		return `
+		CREATE TABLE IF NOT EXISTS method_calls (
+			id SERIAL PRIMARY KEY,
+			method VARCHAR(255) NOT NULL,
+			count INTEGER NOT NULL DEFAULT 0,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(method)
+		);
+		`
+	default:
+		return ""
+	}
+}
+
+func getPathCallsTableSQL(dbType string) string {
+	switch dbType {
+	case "sqlite":
+		return `
 		CREATE TABLE IF NOT EXISTS path_calls (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			path TEXT NOT NULL,
@@ -83,9 +215,38 @@ func createTables() error {
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE(path)
 		);
-		`,
-		// IP调用统计表
 		`
+	case "mysql":
+		return `
+		CREATE TABLE IF NOT EXISTS path_calls (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			path VARCHAR(500) NOT NULL,
+			count INT NOT NULL DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			UNIQUE KEY (path)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+		`
+	case "postgresql":
+		return `
+		CREATE TABLE IF NOT EXISTS path_calls (
+			id SERIAL PRIMARY KEY,
+			path VARCHAR(500) NOT NULL,
+			count INTEGER NOT NULL DEFAULT 0,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(path)
+		);
+		`
+	default:
+		return ""
+	}
+}
+
+func getIPCallsTableSQL(dbType string) string {
+	switch dbType {
+	case "sqlite":
+		return `
 		CREATE TABLE IF NOT EXISTS ip_calls (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			ip TEXT NOT NULL,
@@ -94,9 +255,38 @@ func createTables() error {
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			UNIQUE(ip)
 		);
-		`,
-		// API调用详情表
 		`
+	case "mysql":
+		return `
+		CREATE TABLE IF NOT EXISTS ip_calls (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			ip VARCHAR(45) NOT NULL,
+			count INT NOT NULL DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			UNIQUE KEY (ip)
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+		`
+	case "postgresql":
+		return `
+		CREATE TABLE IF NOT EXISTS ip_calls (
+			id SERIAL PRIMARY KEY,
+			ip VARCHAR(45) NOT NULL,
+			count INTEGER NOT NULL DEFAULT 0,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			UNIQUE(ip)
+		);
+		`
+	default:
+		return ""
+	}
+}
+
+func getCallDetailsTableSQL(dbType string) string {
+	switch dbType {
+	case "sqlite":
+		return `
 		CREATE TABLE IF NOT EXISTS call_details (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			path TEXT NOT NULL,
@@ -106,12 +296,43 @@ func createTables() error {
 			status_code INTEGER NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
-		`,
-		// API密钥表
 		`
+	case "mysql":
+		return `
+		CREATE TABLE IF NOT EXISTS call_details (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			path VARCHAR(500) NOT NULL,
+			method VARCHAR(255) NOT NULL,
+			ip VARCHAR(45) NOT NULL,
+			timestamp DATETIME NOT NULL,
+			status_code INT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+		`
+	case "postgresql":
+		return `
+		CREATE TABLE IF NOT EXISTS call_details (
+			id SERIAL PRIMARY KEY,
+			path VARCHAR(500) NOT NULL,
+			method VARCHAR(255) NOT NULL,
+			ip VARCHAR(45) NOT NULL,
+			timestamp TIMESTAMP NOT NULL,
+			status_code INTEGER NOT NULL,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+		`
+	default:
+		return ""
+	}
+}
+
+func getAPIKeysTableSQL(dbType string) string {
+	switch dbType {
+	case "sqlite":
+		return `
 		CREATE TABLE IF NOT EXISTS api_keys (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			key TEXT NOT NULL UNIQUE,
+			"key" TEXT NOT NULL UNIQUE,
 			name TEXT NOT NULL,
 			max_usage INTEGER NOT NULL DEFAULT 0,
 			current_usage INTEGER NOT NULL DEFAULT 0,
@@ -119,38 +340,103 @@ func createTables() error {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		);
-		`,
+		`
+	case "mysql":
+		return `
+		CREATE TABLE IF NOT EXISTS api_keys (
+			id INT AUTO_INCREMENT PRIMARY KEY,
+			` + "`key`" + ` VARCHAR(255) NOT NULL UNIQUE,
+			name VARCHAR(255) NOT NULL,
+			max_usage INT NOT NULL DEFAULT 0,
+			current_usage INT NOT NULL DEFAULT 0,
+			is_permanent BOOLEAN NOT NULL DEFAULT FALSE,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+		`
+	case "postgresql":
+		return `
+		CREATE TABLE IF NOT EXISTS api_keys (
+			id SERIAL PRIMARY KEY,
+			"key" VARCHAR(255) NOT NULL UNIQUE,
+			name VARCHAR(255) NOT NULL,
+			max_usage INTEGER NOT NULL DEFAULT 0,
+			current_usage INTEGER NOT NULL DEFAULT 0,
+			is_permanent BOOLEAN NOT NULL DEFAULT FALSE,
+			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+		);
+		`
+	default:
+		return ""
 	}
+}
 
-	// 执行创建表结构的SQL语句
-	for _, sql := range createTableSQLs {
+func getIndexSQLs() []string {
+	dbType := config.GetDatabaseType()
+
+	switch dbType {
+	case "sqlite":
+		return []string{
+			"CREATE INDEX IF NOT EXISTS idx_call_details_timestamp ON call_details(timestamp DESC);",
+			"CREATE INDEX IF NOT EXISTS idx_call_details_path ON call_details(path);",
+			"CREATE INDEX IF NOT EXISTS idx_call_details_method ON call_details(method);",
+			"CREATE INDEX IF NOT EXISTS idx_call_details_status ON call_details(status_code);",
+			"CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);",
+			"CREATE INDEX IF NOT EXISTS idx_ip_calls_ip ON ip_calls(ip);",
+			"CREATE INDEX IF NOT EXISTS idx_path_calls_path ON path_calls(path);",
+			"CREATE INDEX IF NOT EXISTS idx_method_calls_method ON method_calls(method);",
+		}
+	case "mysql":
+		return []string{
+			"CREATE INDEX IF NOT EXISTS idx_call_details_timestamp ON call_details(timestamp DESC);",
+			"CREATE INDEX IF NOT EXISTS idx_call_details_path ON call_details(path);",
+			"CREATE INDEX IF NOT EXISTS idx_call_details_method ON call_details(method);",
+			"CREATE INDEX IF NOT EXISTS idx_call_details_status ON call_details(status_code);",
+			"CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(`key`);",
+			"CREATE INDEX IF NOT EXISTS idx_ip_calls_ip ON ip_calls(ip);",
+			"CREATE INDEX IF NOT EXISTS idx_path_calls_path ON path_calls(path);",
+			"CREATE INDEX IF NOT EXISTS idx_method_calls_method ON method_calls(method);",
+		}
+	case "postgresql":
+		return []string{
+			"CREATE INDEX IF NOT EXISTS idx_call_details_timestamp ON call_details(timestamp DESC);",
+			"CREATE INDEX IF NOT EXISTS idx_call_details_path ON call_details(path);",
+			"CREATE INDEX IF NOT EXISTS idx_call_details_method ON call_details(method);",
+			"CREATE INDEX IF NOT EXISTS idx_call_details_status ON call_details(status_code);",
+			"CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);",
+			"CREATE INDEX IF NOT EXISTS idx_ip_calls_ip ON ip_calls(ip);",
+			"CREATE INDEX IF NOT EXISTS idx_path_calls_path ON path_calls(path);",
+			"CREATE INDEX IF NOT EXISTS idx_method_calls_method ON method_calls(method);",
+		}
+	default:
+		return []string{}
+	}
+}
+
+func createTables() error {
+	tables := []string{"stats", "method_calls", "path_calls", "ip_calls", "call_details", "api_keys"}
+
+	for _, table := range tables {
+		sql := getSQLForTable(table)
+		if sql == "" {
+			continue
+		}
 		if _, err := DB.Exec(sql); err != nil {
-			return fmt.Errorf("创建表结构失败: %v", err)
+			return fmt.Errorf("创建表 %s 失败: %v", table, err)
 		}
 	}
 
-	// 创建索引以提高查询性能
-	indexSQLs := []string{
-		"CREATE INDEX IF NOT EXISTS idx_call_details_timestamp ON call_details(timestamp DESC);",
-		"CREATE INDEX IF NOT EXISTS idx_call_details_path ON call_details(path);",
-		"CREATE INDEX IF NOT EXISTS idx_call_details_method ON call_details(method);",
-		"CREATE INDEX IF NOT EXISTS idx_call_details_status ON call_details(status_code);",
-		"CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);",
-		"CREATE INDEX IF NOT EXISTS idx_ip_calls_ip ON ip_calls(ip);",
-		"CREATE INDEX IF NOT EXISTS idx_path_calls_path ON path_calls(path);",
-		"CREATE INDEX IF NOT EXISTS idx_method_calls_method ON method_calls(method);",
-	}
-
+	indexSQLs := getIndexSQLs()
 	for _, sql := range indexSQLs {
 		if _, err := DB.Exec(sql); err != nil {
-			return fmt.Errorf("创建索引失败: %v", err)
+			logrus.Warnf("创建索引失败: %v", err)
 		}
 	}
 
 	return nil
 }
 
-// CloseDB 关闭数据库连接
 func CloseDB() error {
 	if DB != nil {
 		logrus.Info("正在关闭数据库连接")
@@ -159,29 +445,23 @@ func CloseDB() error {
 	return nil
 }
 
-// GetDB 获取数据库连接实例
 func GetDB() *sql.DB {
 	return DB
 }
 
-// Transaction 执行事务
 func Transaction(fn func(tx *sql.Tx) error) error {
-	// 开启事务
 	tx, err := DB.Begin()
 	if err != nil {
 		return fmt.Errorf("开启事务失败: %v", err)
 	}
 
-	// 执行事务函数
 	if err := fn(tx); err != nil {
-		// 回滚事务
 		if rollbackErr := tx.Rollback(); rollbackErr != nil {
 			return fmt.Errorf("事务回滚失败: %v, 原始错误: %v", rollbackErr, err)
 		}
 		return err
 	}
 
-	// 提交事务
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("提交事务失败: %v", err)
 	}
@@ -189,7 +469,6 @@ func Transaction(fn func(tx *sql.Tx) error) error {
 	return nil
 }
 
-// WithTransaction 在事务中执行查询
 func WithTransaction(tx *sql.Tx, query string, args ...interface{}) (*sql.Rows, error) {
 	if tx != nil {
 		return tx.Query(query, args...)
@@ -197,7 +476,14 @@ func WithTransaction(tx *sql.Tx, query string, args ...interface{}) (*sql.Rows, 
 	return DB.Query(query, args...)
 }
 
-// WithTransactionExec 在事务中执行修改操作
+func GetPlaceholder(n int) string {
+	dbType := config.GetDatabaseType()
+	if dbType == "postgresql" {
+		return fmt.Sprintf("$%d", n)
+	}
+	return "?"
+}
+
 func WithTransactionExec(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
 	if tx != nil {
 		return tx.Exec(query, args...)

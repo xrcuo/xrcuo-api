@@ -30,7 +30,13 @@ type Config struct {
 	} `yaml:"api_key"`
 
 	Database struct {
+		Type         string `yaml:"type"`
 		Path         string `yaml:"path"`
+		Host         string `yaml:"host"`
+		Port         int    `yaml:"port"`
+		User         string `yaml:"user"`
+		Password     string `yaml:"password"`
+		DBName       string `yaml:"dbname"`
 		MaxOpenConns int    `yaml:"max_open_conns"`
 		MaxIdleConns int    `yaml:"max_idle_conns"`
 	} `yaml:"database"`
@@ -395,4 +401,63 @@ func IsAPIKeyEnabled() bool {
 		return true
 	}
 	return config.APIKey.Enabled
+}
+
+func GetDatabaseType() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil || config.Database.Type == "" {
+		return "sqlite"
+	}
+	return config.Database.Type
+}
+
+func GetDatabaseHost() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil || config.Database.Host == "" {
+		return "localhost"
+	}
+	return config.Database.Host
+}
+
+func GetDatabasePort() int {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil || config.Database.Port <= 0 {
+		dbType := GetDatabaseType()
+		if dbType == "mysql" {
+			return 3306
+		} else if dbType == "postgresql" {
+			return 5432
+		}
+	}
+	return config.Database.Port
+}
+
+func GetDatabaseUser() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil {
+		return ""
+	}
+	return config.Database.User
+}
+
+func GetDatabasePassword() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil {
+		return ""
+	}
+	return config.Database.Password
+}
+
+func GetDatabaseName() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil || config.Database.DBName == "" {
+		return "xrcuo_api"
+	}
+	return config.Database.DBName
 }

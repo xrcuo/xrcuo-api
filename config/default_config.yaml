@@ -35,6 +35,12 @@ download:
 
 # 数据库配置
 database:
-  path: "./stats.db"  # SQLite数据库文件路径
+  type: "sqlite"  # 数据库类型：sqlite, mysql, postgresql
+  path: "./stats.db"  # SQLite数据库文件路径（仅sqlite使用）
+  host: "localhost"  # 数据库主机（mysql/postgresql使用）
+  port: 3306  # 数据库端口（mysql默认3306，postgresql默认5432）
+  user: ""  # 数据库用户名（mysql/postgresql使用）
+  password: ""  # 数据库密码（mysql/postgresql使用）
+  dbname: "xrcuo_api"  # 数据库名称（mysql/postgresql使用）
   max_open_conns: 10  # 最大打开连接数
   max_idle_conns: 5  # 最大空闲连接数

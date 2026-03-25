@@ -19,7 +19,7 @@
 - **语言**：Golang
 - **Web 框架**：Gin
 - **配置管理**：YAML
-- **数据库**：支持多种数据库（通过 GORM）
+- **数据库**：支持 SQLite（默认）、MySQL、PostgreSQL
 - **IP 库**：IP2Region
 - **日志**：logrus
 
@@ -70,16 +70,72 @@ go build -o xrcuo-api main.go
 
 项目使用 YAML 格式的配置文件，默认配置文件为 `config/default_config.yaml`。
 
+### 数据库配置
+
+项目支持三种数据库：SQLite（默认）、MySQL 和 PostgreSQL。通过修改 `config.yaml` 中的 `database.type` 字段即可切换。
+
+#### SQLite 配置（默认）
+
+```yaml
+database:
+  type: "sqlite"
+  path: "./stats.db"
+  max_open_conns: 10
+  max_idle_conns: 5
+```
+
+#### MySQL 配置
+
+```yaml
+database:
+  type: "mysql"
+  host: "localhost"
+  port: 3306
+  user: "root"
+  password: "your_password"
+  dbname: "xrcuo_api"
+  max_open_conns: 10
+  max_idle_conns: 5
+```
+
+使用前需创建数据库：
+```sql
+CREATE DATABASE xrcuo_api CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+#### PostgreSQL 配置
+
+```yaml
+database:
+  type: "postgresql"
+  host: "localhost"
+  port: 5432
+  user: "postgres"
+  password: "your_password"
+  dbname: "xrcuo_api"
+  max_open_conns: 10
+  max_idle_conns: 5
+```
+
+使用前需创建数据库：
+```sql
+CREATE DATABASE xrcuo_api;
+```
+
 ### 主要配置项
 
 | 配置项 | 类型 | 默认值 | 描述 |
 |-------|------|-------|------|
 | `server.port` | string | ":8080" | 服务监听端口 |
-| `server.mode` | string | "release" | Gin 运行模式（debug/release/test） |
-| `database.dsn` | string | "sqlite3:./data.db" | 数据库连接字符串 |
-| `rate_limit.enable` | bool | true | 是否启用速率限制 |
-| `rate_limit.rate` | int | 100 | 每分钟请求次数限制 |
-| `stats.enable` | bool | true | 是否启用统计功能 |
+| `server.mode` | string | "debug" | Gin 运行模式（debug/release/test） |
+| `database.type` | string | "sqlite" | 数据库类型：sqlite, mysql, postgresql |
+| `database.path` | string | "./stats.db" | SQLite 数据库文件路径 |
+| `database.host` | string | "localhost" | 数据库主机（MySQL/PostgreSQL） |
+| `database.port` | int | 3306 | 数据库端口 |
+| `database.user` | string | "" | 数据库用户名（MySQL/PostgreSQL） |
+| `database.password` | string | "" | 数据库密码（MySQL/PostgreSQL） |
+| `database.dbname` | string | "xrcuo_api" | 数据库名称（MySQL/PostgreSQL） |
+| `api_key.enabled` | bool | true | 是否启用 API 密钥验证 |
 
 ### 自定义配置
 
@@ -91,7 +147,8 @@ server:
   mode: "release"
 
 database:
-  dsn: "sqlite3:./data.db"
+  type: "sqlite"
+  path: "./stats.db"
 ```
 
 ## API 密钥管理

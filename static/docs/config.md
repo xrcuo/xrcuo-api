@@ -44,7 +44,13 @@ download:
 
 # 数据库配置
 database:
-  path: "./stats.db"  # SQLite数据库文件路径
+  type: "sqlite"  # 数据库类型：sqlite, mysql, postgresql
+  path: "./stats.db"  # SQLite数据库文件路径（仅sqlite使用）
+  host: "localhost"  # 数据库主机（mysql/postgresql使用）
+  port: 3306  # 数据库端口（mysql默认3306，postgresql默认5432）
+  user: ""  # 数据库用户名（mysql/postgresql使用）
+  password: ""  # 数据库密码（mysql/postgresql使用）
+  dbname: "xrcuo_api"  # 数据库名称（mysql/postgresql使用）
   max_open_conns: 10  # 最大打开连接数
   max_idle_conns: 5  # 最大空闲连接数
 ```
@@ -64,7 +70,13 @@ database:
 | `random_image.local_enabled` | bool | false | 是否启用本地图片 |
 | `random_image.local_path` | string | "images/" | 本地图片目录路径 |
 | `download.path` | string | "downloads/" | 下载文件目录路径 |
+| `database.type` | string | "sqlite" | 数据库类型：sqlite, mysql, postgresql |
 | `database.path` | string | "./stats.db" | SQLite数据库文件路径 |
+| `database.host` | string | "localhost" | 数据库主机（mysql/postgresql使用） |
+| `database.port` | int | 3306 | 数据库端口（mysql默认3306，postgresql默认5432） |
+| `database.user` | string | "" | 数据库用户名（mysql/postgresql使用） |
+| `database.password` | string | "" | 数据库密码（mysql/postgresql使用） |
+| `database.dbname` | string | "xrcuo_api" | 数据库名称（mysql/postgresql使用） |
 | `database.max_open_conns` | int | 10 | 最大打开连接数 |
 | `database.max_idle_conns` | int | 5 | 最大空闲连接数 |
 
@@ -109,9 +121,52 @@ random_image:
 
 ## 数据库配置
 
+项目支持三种数据库：SQLite（默认）、MySQL 和 PostgreSQL。
+
+## SQLite 配置（默认）
+
 ```yaml
 database:
+  type: "sqlite"  # 数据库类型
   path: "./stats.db"  # SQLite数据库文件路径
   max_open_conns: 10  # 最大打开连接数
   max_idle_conns: 5  # 最大空闲连接数
 ```
+
+## MySQL 配置
+
+```yaml
+database:
+  type: "mysql"  # 数据库类型
+  host: "localhost"  # 数据库主机
+  port: 3306  # 数据库端口（MySQL默认3306）
+  user: "root"  # 数据库用户名
+  password: "your_password"  # 数据库密码
+  dbname: "xrcuo_api"  # 数据库名称
+  max_open_conns: 10  # 最大打开连接数
+  max_idle_conns: 5  # 最大空闲连接数
+```
+
+使用 MySQL 前需要：
+1. 安装 MySQL 服务
+2. 创建数据库：`CREATE DATABASE xrcuo_api CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`
+3. 配置正确的用户名和密码
+
+## PostgreSQL 配置
+
+```yaml
+database:
+  type: "postgresql"  # 数据库类型
+  host: "localhost"  # 数据库主机
+  port: 5432  # 数据库端口（PostgreSQL默认5432）
+  user: "postgres"  # 数据库用户名
+  password: "your_password"  # 数据库密码
+  dbname: "xrcuo_api"  # 数据库名称
+  max_open_conns: 10  # 最大打开连接数
+  max_idle_conns: 5  # 最大空闲连接数
+```
+
+使用 PostgreSQL 前需要：
+1. 安装 PostgreSQL 服务
+2. 创建数据库：`CREATE DATABASE xrcuo_api;`
+3. 配置正确的用户名和密码
