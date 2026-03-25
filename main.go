@@ -100,7 +100,12 @@ func setupStaticFiles(r *gin.Engine) {
 	}
 
 	r.StaticFS("/static", http.FS(staticFS))
-	r.StaticFS("/docs", http.Dir("./static/docs"))
+	
+	docsFS, err := fs.Sub(embeddedFiles, "static/docs")
+	if err != nil {
+		logrus.Fatalf("获取static/docs子目录失败：%v", err)
+	}
+	r.StaticFS("/docs", http.FS(docsFS))
 
 	r.GET("/favicon.ico", func(c *gin.Context) {
 		c.FileFromFS("favicon.ico", http.FS(staticFS))

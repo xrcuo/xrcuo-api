@@ -427,14 +427,56 @@ func createTables() error {
 		}
 	}
 
-	indexSQLs := getIndexSQLs()
-	for _, sql := range indexSQLs {
-		if _, err := DB.Exec(sql); err != nil {
-			logrus.Warnf("创建索引失败: %v", err)
+	dbType := config.GetDatabaseType()
+	if dbType == "mysql" {
+		createMySQLIndexes()
+	} else {
+		indexSQLs := getIndexSQLs()
+		for _, sql := range indexSQLs {
+			if _, err := DB.Exec(sql); err != nil {
+				logrus.Warnf("创建索引失败: %v", err)
+			}
 		}
 	}
 
 	return nil
+}
+
+func createMySQLIndexes() {
+	indexes := []struct {
+		table  string
+		name   string
+		column string
+	}{
+		{"call_details", "idx_call_details_timestamp", "timestamp DESC"},
+		{"call_details", "idx_call_details_path", "path"},
+		{"call_details", "idx_call_details_method", "method"},
+		{"call_details", "idx_call_details_status", "status_code"},
+		{"api_keys", "idx_api_keys_key", "`key`"},
+		{"ip_calls", "idx_ip_calls_ip", "ip"},
+		{"path_calls", "idx_path_calls_path", "path"},
+		{"method_calls", "idx_method_calls_method", "method"},
+	}
+
+	for _, idx := range indexes {
+		var exists bool
+		err := DB.QueryRow(
+			"SELECT COUNT(1) FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?",
+			idx.table, idx.name,
+		).Scan(&exists)
+		if err != nil {
+			logrus.Warnf("检查索引 %s 存在性失败: %v", idx.name, err)
+			continue
+		}
+		if exists {
+			continue
+		}
+
+		_, err = DB.Exec(fmt.Sprintf("CREATE INDEX %s ON %s(%s)", idx.name, idx.table, idx.column))
+		if err != nil {
+			logrus.Warnf("创建索引 %s 失败: %v", idx.name, err)
+		}
+	}
 }
 
 func CloseDB() error {
