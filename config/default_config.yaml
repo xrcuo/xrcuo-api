@@ -5,10 +5,6 @@ server:
   json_format:
     enabled: false  # 是否启用格式化JSON响应（默认关闭）
 
-# API密钥配置
-api_key:
-  enabled: true  # 是否启用API密钥验证（默认启用，关闭后所有API无需密钥即可访问）
-
 # IP2Region配置
 ip2region:
   v4_db_path: "./ip2region_v4.xdb"  # IPv4数据库路径

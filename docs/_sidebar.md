@@ -8,7 +8,6 @@
   * [获取公网IP](api/ipify.md)
   * [MCPE服务器查询](api/mcpe.md)
   * [文件下载](api/download.md)
-* [API密钥管理](api_key.md)
 * [统计功能](stats.md)
 * [配置说明](config.md)
 * [开发指南](development.md)

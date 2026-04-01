@@ -127,7 +127,6 @@ func registerRoutes(r *gin.Engine) {
 	apiGroup := r.Group("/api")
 	{
 		apiGroup.Use(common.StatsMiddleware())
-		apiGroup.Use(common.APIKeyMiddleware())
 		pluginManager.RegisterAll(apiGroup)
 	}
 
@@ -141,14 +140,8 @@ func registerRoutes(r *gin.Engine) {
 		apiDownloadGroup.GET("/*filepath", download.DownloadHandler)
 	}
 
-	authGroup := r.Group("/auth")
-	{
-		plugin.RegisterAPIRouter(authGroup)
-	}
-
 	r.GET("/stats", common.StatsHandler)
 	r.GET("/api/stats", common.StatsAPIHandler)
-	r.GET("/api_key", common.APIKeyHandler)
 
 	adminFS, err := fs.Sub(embeddedFiles, "admin/dist")
 	if err != nil {

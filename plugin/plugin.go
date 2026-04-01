@@ -3,7 +3,6 @@ package plugin
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/xrcuo/xrcuo-api/plugin/api_key"
 	"github.com/xrcuo/xrcuo-api/plugin/client"
 	"github.com/xrcuo/xrcuo-api/plugin/ip"
 	"github.com/xrcuo/xrcuo-api/plugin/ipify"
@@ -144,9 +143,4 @@ func (pm *PluginManager) RegisterBuiltinPlugins() {
 	pm.Register(client.ClientPlugin)
 	pm.Register(ipify.IpifyPlugin)
 	pm.Register(mcpe.MCPEPlugin)
-}
-
-// RegisterAPIRouter 注册API密钥管理路由
-func RegisterAPIRouter(r *gin.RouterGroup) {
-	api_key.RegisterRouter(r)
 }

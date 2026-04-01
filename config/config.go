@@ -25,10 +25,6 @@ type Config struct {
 		} `yaml:"json_format"`
 	} `yaml:"server"`
 
-	APIKey struct {
-		Enabled bool `yaml:"enabled"`
-	} `yaml:"api_key"`
-
 	Database struct {
 		Type         string `yaml:"type"`
 		Path         string `yaml:"path"`
@@ -392,15 +388,6 @@ func GetDownloadPath() string {
 		return "./downloads"
 	}
 	return downloadPath
-}
-
-func IsAPIKeyEnabled() bool {
-	cm := GetInstance()
-	config := cm.GetConfig()
-	if config == nil {
-		return true
-	}
-	return config.APIKey.Enabled
 }
 
 func GetDatabaseType() string {

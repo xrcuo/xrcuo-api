@@ -7,26 +7,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/patrickmn/go-cache"
 	"github.com/sirupsen/logrus"
 	"github.com/xrcuo/xrcuo-api/config"
-	"github.com/xrcuo/xrcuo-api/db"
-	"github.com/xrcuo/xrcuo-api/models"
 )
-
-// 全局API密钥缓存实例
-var apiKeyCacheInstance *cache.Cache
-
-// init 初始化API密钥缓存
-func init() {
-	// 创建go-cache实例，设置默认过期时间为5分钟，清理间隔为10分钟
-	apiKeyCacheInstance = cache.New(5*time.Minute, 10*time.Minute)
-}
-
-// GetAPICache 获取API密钥缓存实例
-func GetAPICache() *cache.Cache {
-	return apiKeyCacheInstance
-}
 
 // RequestLoggerMiddleware 请求日志中间件
 func RequestLoggerMiddleware() gin.HandlerFunc {
@@ -98,80 +81,6 @@ func CORSMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		c.Next()
-	}
-}
-
-// APIKeyMiddleware API密钥验证中间件
-func APIKeyMiddleware() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		// 如果未启用API密钥验证，则跳过验证
-		if !config.GetInstance().GetConfig().APIKey.Enabled {
-			c.Next()
-			return
-		}
-
-		// 从请求头或查询参数中获取API密钥
-		apiKey := c.GetHeader("Authorization")
-		if apiKey == "" {
-			apiKey = c.Query("api_key")
-		}
-
-		// 检查API密钥是否存在
-		if apiKey == "" {
-			ErrorResponse(c, http.StatusUnauthorized, 401, "API密钥不能为空")
-			c.Abort()
-			return
-		}
-
-		// 验证API密钥
-		var keyInfo *models.APIKey
-		// 从缓存获取
-		if val, found := apiKeyCacheInstance.Get(apiKey); found {
-			keyInfo = val.(*models.APIKey)
-		}
-
-		if keyInfo == nil {
-			// 从数据库获取
-			var err error
-			keyInfo, err = db.GetAPIKeyByKey(apiKey)
-			if err != nil {
-				ErrorResponse(c, http.StatusUnauthorized, 401, "无效的API密钥")
-				c.Abort()
-				return
-			}
-			// 存入缓存
-			apiKeyCacheInstance.Set(apiKey, keyInfo, cache.DefaultExpiration)
-		}
-
-		// 检查API密钥是否已达到使用上限
-		if !keyInfo.IsPermanent && keyInfo.CurrentUsage >= keyInfo.MaxUsage {
-			ErrorResponse(c, http.StatusForbidden, 403, "API密钥已达到使用上限")
-			c.Abort()
-			return
-		}
-
-		// 更新API密钥使用次数（数据库层面做原子性检查）
-		if err := db.UpdateAPIKeyUsage(apiKey); err != nil {
-			if err.Error() == "API密钥已达到使用上限" {
-				// 缓存数据过期，从数据库重新获取最新状态
-				apiKeyCacheInstance.Delete(apiKey)
-				ErrorResponse(c, http.StatusForbidden, 403, "API密钥已达到使用上限")
-			} else {
-				ErrorResponse(c, http.StatusInternalServerError, 500, "更新API密钥使用次数失败")
-			}
-			c.Abort()
-			return
-		}
-
-		// 更新缓存中的使用次数（仅在数据库更新成功后）
-		keyInfo.CurrentUsage++
-		apiKeyCacheInstance.Set(apiKey, keyInfo, cache.DefaultExpiration)
-
-		// 将API密钥信息存储到上下文
-		c.Set("api_key", keyInfo)
-
-		// 继续处理请求
 		c.Next()
 	}
 }

@@ -116,8 +116,6 @@ func getSQLForTable(tableName string) string {
 		return getIPCallsTableSQL(dbType)
 	case "call_details":
 		return getCallDetailsTableSQL(dbType)
-	case "api_keys":
-		return getAPIKeysTableSQL(dbType)
 	default:
 		return ""
 	}
@@ -326,52 +324,6 @@ func getCallDetailsTableSQL(dbType string) string {
 	}
 }
 
-func getAPIKeysTableSQL(dbType string) string {
-	switch dbType {
-	case "sqlite":
-		return `
-		CREATE TABLE IF NOT EXISTS api_keys (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			"key" TEXT NOT NULL UNIQUE,
-			name TEXT NOT NULL,
-			max_usage INTEGER NOT NULL DEFAULT 0,
-			current_usage INTEGER NOT NULL DEFAULT 0,
-			is_permanent BOOLEAN NOT NULL DEFAULT 0,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-		);
-		`
-	case "mysql":
-		return `
-		CREATE TABLE IF NOT EXISTS api_keys (
-			id INT AUTO_INCREMENT PRIMARY KEY,
-			` + "`key`" + ` VARCHAR(255) NOT NULL UNIQUE,
-			name VARCHAR(255) NOT NULL,
-			max_usage INT NOT NULL DEFAULT 0,
-			current_usage INT NOT NULL DEFAULT 0,
-			is_permanent BOOLEAN NOT NULL DEFAULT FALSE,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-		) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-		`
-	case "postgresql":
-		return `
-		CREATE TABLE IF NOT EXISTS api_keys (
-			id SERIAL PRIMARY KEY,
-			"key" VARCHAR(255) NOT NULL UNIQUE,
-			name VARCHAR(255) NOT NULL,
-			max_usage INTEGER NOT NULL DEFAULT 0,
-			current_usage INTEGER NOT NULL DEFAULT 0,
-			is_permanent BOOLEAN NOT NULL DEFAULT FALSE,
-			created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-		);
-		`
-	default:
-		return ""
-	}
-}
-
 func getIndexSQLs() []string {
 	dbType := config.GetDatabaseType()
 
@@ -382,7 +334,6 @@ func getIndexSQLs() []string {
 			"CREATE INDEX IF NOT EXISTS idx_call_details_path ON call_details(path);",
 			"CREATE INDEX IF NOT EXISTS idx_call_details_method ON call_details(method);",
 			"CREATE INDEX IF NOT EXISTS idx_call_details_status ON call_details(status_code);",
-			"CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);",
 			"CREATE INDEX IF NOT EXISTS idx_ip_calls_ip ON ip_calls(ip);",
 			"CREATE INDEX IF NOT EXISTS idx_path_calls_path ON path_calls(path);",
 			"CREATE INDEX IF NOT EXISTS idx_method_calls_method ON method_calls(method);",
@@ -393,7 +344,6 @@ func getIndexSQLs() []string {
 			"CREATE INDEX IF NOT EXISTS idx_call_details_path ON call_details(path);",
 			"CREATE INDEX IF NOT EXISTS idx_call_details_method ON call_details(method);",
 			"CREATE INDEX IF NOT EXISTS idx_call_details_status ON call_details(status_code);",
-			"CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(`key`);",
 			"CREATE INDEX IF NOT EXISTS idx_ip_calls_ip ON ip_calls(ip);",
 			"CREATE INDEX IF NOT EXISTS idx_path_calls_path ON path_calls(path);",
 			"CREATE INDEX IF NOT EXISTS idx_method_calls_method ON method_calls(method);",
@@ -404,7 +354,6 @@ func getIndexSQLs() []string {
 			"CREATE INDEX IF NOT EXISTS idx_call_details_path ON call_details(path);",
 			"CREATE INDEX IF NOT EXISTS idx_call_details_method ON call_details(method);",
 			"CREATE INDEX IF NOT EXISTS idx_call_details_status ON call_details(status_code);",
-			"CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(key);",
 			"CREATE INDEX IF NOT EXISTS idx_ip_calls_ip ON ip_calls(ip);",
 			"CREATE INDEX IF NOT EXISTS idx_path_calls_path ON path_calls(path);",
 			"CREATE INDEX IF NOT EXISTS idx_method_calls_method ON method_calls(method);",
@@ -415,7 +364,7 @@ func getIndexSQLs() []string {
 }
 
 func createTables() error {
-	tables := []string{"stats", "method_calls", "path_calls", "ip_calls", "call_details", "api_keys"}
+	tables := []string{"stats", "method_calls", "path_calls", "ip_calls", "call_details"}
 
 	for _, table := range tables {
 		sql := getSQLForTable(table)
@@ -452,7 +401,6 @@ func createMySQLIndexes() {
 		{"call_details", "idx_call_details_path", "path"},
 		{"call_details", "idx_call_details_method", "method"},
 		{"call_details", "idx_call_details_status", "status_code"},
-		{"api_keys", "idx_api_keys_key", "`key`"},
 		{"ip_calls", "idx_ip_calls_ip", "ip"},
 		{"path_calls", "idx_path_calls_path", "path"},
 		{"method_calls", "idx_method_calls_method", "method"},

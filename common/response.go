@@ -31,7 +31,6 @@ const (
 	CodeThirdPartyError     = 503 // 第三方服务错误
 
 	// 业务错误
-	CodeAPIKeyError     = 1001 // API密钥错误
 	CodeIPError         = 1002 // IP相关错误
 	CodeValidationError = 1003 // 数据验证错误
 )
