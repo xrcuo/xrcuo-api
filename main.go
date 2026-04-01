@@ -20,6 +20,8 @@ import (
 //go:embed static
 //go:embed templates
 //go:embed admin/dist
+//go:embed docs
+//go:embed docs/_sidebar.md
 var embeddedFiles embed.FS
 
 var globalPluginManager *plugin.PluginManager
@@ -100,10 +102,10 @@ func setupStaticFiles(r *gin.Engine) {
 	}
 
 	r.StaticFS("/static", http.FS(staticFS))
-	
-	docsFS, err := fs.Sub(embeddedFiles, "static/docs")
+
+	docsFS, err := fs.Sub(embeddedFiles, "docs")
 	if err != nil {
-		logrus.Fatalf("获取static/docs子目录失败：%v", err)
+		logrus.Fatalf("获取docs子目录失败：%v", err)
 	}
 	r.StaticFS("/docs", http.FS(docsFS))
 
