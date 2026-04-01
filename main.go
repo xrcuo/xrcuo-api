@@ -155,6 +155,7 @@ func registerRoutes(r *gin.Engine) {
 }
 
 func startServer(r *gin.Engine) {
+
 	port := config.GetServerPort()
 	logrus.Infof("服务启动成功，监听地址：http://localhost%s", port)
 	logrus.Infof("API文档：http://localhost%s/docs/", port)
