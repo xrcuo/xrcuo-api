@@ -64,7 +64,7 @@ GET /api/stats
 ### 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/stats
+curl YOUR_DOMAIN/api/stats
 ```
 
 ### 示例响应

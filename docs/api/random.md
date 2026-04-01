@@ -43,7 +43,7 @@ GET /api/random?min={最小值}&max={最大值}
 ## 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/random?min=1&max=100
+curl YOUR_DOMAIN/api/random?min=1&max=100
 ```
 
 ## 示例响应

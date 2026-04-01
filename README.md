@@ -5,7 +5,6 @@
 ## 功能特性
 
 - **插件化架构**：支持动态添加和管理 API 插件
-- **API 密钥管理**：支持生成、验证和管理 API 密钥
 - **统计功能**：实时统计 API 请求次数和响应时间
 - **多种 API 插件**：内置 IP 查询、Ping 测试、随机数生成等实用插件
 - **跨域支持**：内置 CORS 中间件
@@ -57,7 +56,6 @@ go run main.go
 
 - API 文档：http://localhost:8080
 - 统计页面：http://localhost:8080/stats
-- API 密钥管理：http://localhost:8080/api_key
 
 ### 构建二进制文件
 
@@ -135,7 +133,6 @@ CREATE DATABASE xrcuo_api;
 | `database.user` | string | "" | 数据库用户名（MySQL/PostgreSQL） |
 | `database.password` | string | "" | 数据库密码（MySQL/PostgreSQL） |
 | `database.dbname` | string | "xrcuo_api" | 数据库名称（MySQL/PostgreSQL） |
-| `api_key.enabled` | bool | true | 是否启用 API 密钥验证 |
 
 ### 自定义配置
 
@@ -149,28 +146,6 @@ server:
 database:
   type: "sqlite"
   path: "./stats.db"
-```
-
-## API 密钥管理
-
-### 生成 API 密钥
-
-1. 访问 http://localhost:8080/api_key
-2. 点击 "生成新密钥" 按钮
-3. 复制生成的 API 密钥
-
-### 使用 API 密钥
-
-在请求头中添加 `X-API-Key` 字段：
-
-```bash
-curl -H "X-API-Key: your-api-key" http://localhost:8080/api/ip?ip=114.114.114.114
-```
-
-或者作为查询参数：
-
-```bash
-curl http://localhost:8080/api/ip?ip=114.114.114.114&api_key=your-api-key
 ```
 
 ## 统计功能
@@ -234,7 +209,7 @@ xrcuo-api/
 
 ```bash
 go run main.go
-curl http://localhost:8080/api/myplugin?api_key=your-api-key
+curl http://localhost:8080/api/myplugin
 ```
 
 ## 部署方式

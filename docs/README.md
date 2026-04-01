@@ -5,7 +5,6 @@
 ## 功能特性
 
 - **插件化架构**：支持动态添加和管理 API 插件
-- **API 密钥管理**：支持生成、验证和管理 API 密钥
 - **统计功能**：实时统计 API 请求次数和响应时间
 - **多种 API 插件**：内置 IP 查询、Ping 测试、随机数生成、MCPE服务器查询等实用插件
 - **跨域支持**：内置 CORS 中间件
@@ -44,46 +43,23 @@
 4. **访问服务**
    - API 文档：YOUR_DOMAIN/docs
    - 管理后台：YOUR_DOMAIN/admin
-   - API 密钥管理：YOUR_DOMAIN/admin/#/api-keys
 
 ## API 列表
 
-所有需要 API 密钥的接口都挂载在 `/api/` 路径下，文件下载接口无需密钥。
+所有 API 接口都挂载在 `/api/` 路径下，无需密钥即可访问。
 
-| 接口 | 路径 | 描述 | 需要密钥 |
-|------|------|------|----------|
-| IP查询 | `/api/ip` | 查询IP归属地信息 | ✅ |
-| Ping测试 | `/api/ping` | 对目标进行Ping测试 | ✅ |
-| 随机数生成 | `/api/random` | 生成指定范围随机整数 | ✅ |
-| 随机图片 | `/api/random/image` | 获取随机图片 | ✅ |
-| 随机图片信息 | `/api/random/image/info` | 获取随机图片信息 | ✅ |
-| 客户端信息 | `/api/client` | 获取客户端详细信息 | ✅ |
-| 公网IP | `/api/ipify` | 获取客户端公网IP | ✅ |
-| MCPE查询 | `/api/mcpe/status` | 查询Minecraft PE服务器状态 | ✅ |
-| 文件下载 | `/download/{file}` | 下载本地文件 | ❌ |
-| API下载 | `/api/download/{file}` | 下载本地文件 | ❌ |
-
-## API 密钥管理
-
-### 生成 API 密钥
-
-1. 访问 YOUR_DOMAIN/admin/#/api-keys
-2. 点击 "创建新API Key" 按钮
-3. 复制生成的 API 密钥
-
-### 使用 API 密钥
-
-在请求头中添加 `Authorization` 字段：
-
-```bash
-curl -H "Authorization: your-api-key" YOUR_DOMAIN/api/ip?ip=114.114.114.114
-```
-
-或者作为查询参数：
-
-```bash
-curl YOUR_DOMAIN/api/ip?ip=114.114.114.114&api_key=your-api-key
-```
+| 接口 | 路径 | 描述 |
+|------|------|------|
+| IP查询 | `/api/ip` | 查询IP归属地信息 |
+| Ping测试 | `/api/ping` | 对目标进行Ping测试 |
+| 随机数生成 | `/api/random` | 生成指定范围随机整数 |
+| 随机图片 | `/api/random/image` | 获取随机图片 |
+| 随机图片信息 | `/api/random/image/info` | 获取随机图片信息 |
+| 客户端信息 | `/api/client` | 获取客户端详细信息 |
+| 公网IP | `/api/ipify` | 获取客户端公网IP |
+| MCPE查询 | `/api/mcpe/status` | 查询Minecraft PE服务器状态 |
+| 文件下载 | `/download/{file}` | 下载本地文件 |
+| API下载 | `/api/download/{file}` | 下载本地文件 |
 
 ## 通用 API 格式
 
@@ -118,7 +94,6 @@ xrcuo-api/
 │   ├── mcpe/        # MCPE服务器查询插件
 │   ├── client/      # 客户端信息插件
 │   ├── ipify/       # 公网IP插件
-│   ├── api_key/     # API密钥管理插件
 │   └── download/    # 文件下载插件
 ├── static/          # 静态资源
 ├── templates/       # HTML 模板

@@ -48,7 +48,7 @@ GET /api/ip?ip={ip地址}
 ## 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/ip?ip=114.114.114.114
+curl YOUR_DOMAIN/api/ip?ip=114.114.114.114
 ```
 
 ## 示例响应

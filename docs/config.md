@@ -14,10 +14,6 @@ server:
   json_format:
     enabled: false  # 是否启用格式化JSON响应
 
-# API密钥配置
-api_key:
-  enabled: true  # 是否启用API密钥验证（默认启用，关闭后所有API无需密钥即可访问）
-
 # IP2Region配置
 ip2region:
   v4_db_path: "./ip2region_v4.xdb"  # IPv4数据库路径
@@ -62,7 +58,6 @@ database:
 | `server.port` | string | ":8080" | 服务监听端口 |
 | `server.mode` | string | "debug" | Gin运行模式（debug, release, test） |
 | `server.json_format.enabled` | bool | false | 是否启用格式化JSON响应 |
-| `api_key.enabled` | bool | true | 是否启用API密钥验证 |
 | `ip2region.v4_db_path` | string | "./ip2region_v4.xdb" | IPv4数据库路径 |
 | `ip2region.v6_db_path` | string | "./ip2region_v6.xdb" | IPv6数据库路径 |
 | `log.level` | string | "info" | 日志级别 |
@@ -87,16 +82,6 @@ database:
 1. 命令行参数（如果支持）
 2. `config.yaml`（用户自定义配置）
 3. `config/default_config.yaml`（默认配置）
-
-## API密钥配置
-
-```yaml
-api_key:
-  enabled: true  # true=启用验证，false=禁用验证
-```
-
-- `enabled: true`（默认）- 所有API请求需要有效的API密钥
-- `enabled: false` - 所有API请求无需API密钥即可访问（适用于内网或不需要认证的场景）
 
 ## 日志配置
 

@@ -52,7 +52,7 @@ GET /api/client
 ## 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/client
+curl YOUR_DOMAIN/api/client
 ```
 
 ## 示例响应

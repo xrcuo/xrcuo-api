@@ -73,7 +73,7 @@ pluginManager.Register(myplugin.MyPlugin) // 添加这一行
 
 ```bash
 go run main.go
-curl -H "X-API-Key: your-api-key" YOUR_DOMAIN/api/myplugin
+curl YOUR_DOMAIN/api/myplugin
 ```
 
 ## 插件开发规范
@@ -114,7 +114,6 @@ func TestMyPlugin(t *testing.T) {
 
     // 创建测试请求
     req, _ := http.NewRequest("GET", "/api/myplugin", nil)
-    req.Header.Set("X-API-Key", "test-key")
 
     // 执行请求
     w := httptest.NewRecorder()

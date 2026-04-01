@@ -25,7 +25,7 @@ GET /api/random/image
 ### 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" "YOUR_DOMAIN/api/random/image"
+curl "YOUR_DOMAIN/api/random/image"
 ```
 
 ---
@@ -68,7 +68,7 @@ GET /api/random/image/info
 ### 示例请求
 
 ```bash
-curl -H "X-API-Key: your-api-key" "YOUR_DOMAIN/api/random/image/info"
+curl "YOUR_DOMAIN/api/random/image/info"
 ```
 
 ### 示例响应
