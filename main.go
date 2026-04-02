@@ -160,8 +160,39 @@ func startServer(r *gin.Engine) {
 	logrus.Infof("服务启动成功，监听地址：http://localhost%s", port)
 	logrus.Infof("API文档：http://localhost%s/docs/", port)
 	logrus.Infof("管理后台：http://localhost%s/admin/", port)
-	logrus.Infof("IP接口示例：http://localhost%s/api/ip?ip=114.114.114.114", port)
+	logrus.Infof("IP地址查询：http://localhost%s/api/ip?ip=114.114.114.114", port)
+	logrus.Infof("获取访问者IP：http://localhost%s/api/ipify", port)
 	logrus.Infof("Ping接口示例：http://localhost%s/api/ping?target=www.baidu.com&count=3", port)
+
+	// 获取并打印本地网络接口IP
+	if localIPs, err := common.GetLocalIPs(); err == nil && len(localIPs) > 0 {
+		var publicIPs []string
+		var privateIPs []string
+
+		for _, ip := range localIPs {
+			if common.IsPrivateIP(ip) {
+				privateIPs = append(privateIPs, ip)
+			} else {
+				publicIPs = append(publicIPs, ip)
+			}
+		}
+
+		if len(publicIPs) > 0 {
+			logrus.Infof("本地公网IP：%v", publicIPs)
+		}
+		if len(privateIPs) > 0 {
+			logrus.Infof("本地内网IP：%v", privateIPs)
+		}
+	} else if err != nil {
+		logrus.Warnf("获取本地IP失败：%v", err)
+	}
+
+	// 获取并打印外网IP（使用国内API）
+	if publicIP, err := common.GetPublicIP(); err == nil {
+		logrus.Infof("外网IP地址：%s", publicIP)
+	} else {
+		logrus.Warnf("获取外网IP失败：%v", err)
+	}
 
 	if err := r.Run(port); err != nil {
 		logrus.Fatalf("服务启动失败：%v", err)
