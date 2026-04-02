@@ -1,11 +1,16 @@
 package main
 
 import (
+	"context"
 	"embed"
 	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -194,9 +199,36 @@ func startServer(r *gin.Engine) {
 		logrus.Warnf("获取外网IP失败：%v", err)
 	}
 
-	if err := r.Run(port); err != nil {
-		logrus.Fatalf("服务启动失败：%v", err)
+	// 创建HTTP服务器
+	srv := &http.Server{
+		Addr:    port,
+		Handler: r,
 	}
+
+	// 启动服务
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logrus.Fatalf("服务启动失败：%v", err)
+		}
+	}()
+
+	// 等待中断信号
+	quit := make(chan os.Signal, 1)
+	// 监听信号：SIGINT (Ctrl+C), SIGTERM
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+	<-quit
+	logrus.Info("正在关闭服务...")
+
+	// 设置5秒超时用于优雅关闭
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// 优雅关闭服务器
+	if err := srv.Shutdown(ctx); err != nil {
+		logrus.Fatalf("服务强制关闭：%v", err)
+	}
+
+	logrus.Info("服务已优雅关闭")
 }
 
 func main() {
