@@ -43,13 +43,15 @@ type Config struct {
 	} `yaml:"ip2region"`
 
 	Log struct {
-		Level         string `yaml:"level"`
-		File          string `yaml:"file"`
-		ConsoleOutput bool   `yaml:"console_output"`
-		RequestLog    bool   `yaml:"request_log"`
-		MaxSize       int    `yaml:"max_size"`
-		MaxBackups    int    `yaml:"max_backups"`
-		MaxAge        int    `yaml:"max_age"`
+		Level            string `yaml:"level"`
+		File             string `yaml:"file"`
+		ConsoleOutput    bool   `yaml:"console_output"`
+		RequestLog       bool   `yaml:"request_log"`
+		MaxSize          int    `yaml:"max_size"`
+		MaxBackups       int    `yaml:"max_backups"`
+		MaxAge           int    `yaml:"max_age"`
+		Compress         bool   `yaml:"compress"`
+		NewFileOnStartup bool   `yaml:"new_file_on_startup"`
 	} `yaml:"log"`
 
 	RandomImage struct {
