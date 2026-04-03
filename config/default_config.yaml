@@ -7,8 +7,8 @@ server:
 
 # IP2Region配置
 ip2region:
-  v4_db_path: "./ip2region_v4.xdb"  # IPv4数据库路径
-  v6_db_path: "./ip2region_v6.xdb"  # IPv6数据库路径
+  v4_db_path: "./data/ip2region_v4.xdb"  # IPv4数据库路径
+  v6_db_path: "./data/ip2region_v6.xdb"  # IPv6数据库路径
 
 # 日志配置
 log:
@@ -32,7 +32,7 @@ download:
 # 数据库配置
 database:
   type: "sqlite"  # 数据库类型：sqlite, mysql, postgresql
-  path: "./stats.db"  # SQLite数据库文件路径（仅sqlite使用）
+  path: "./data/stats.db"  # SQLite数据库文件路径（仅sqlite使用）
   host: "localhost"  # 数据库主机（mysql/postgresql使用）
   port: 3306  # 数据库端口（mysql默认3306，postgresql默认5432）
   user: ""  # 数据库用户名（mysql/postgresql使用）

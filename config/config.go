@@ -413,9 +413,10 @@ func GetDatabasePort() int {
 	config := cm.GetConfig()
 	if config == nil || config.Database.Port <= 0 {
 		dbType := GetDatabaseType()
-		if dbType == "mysql" {
+		switch dbType {
+		case "mysql":
 			return 3306
-		} else if dbType == "postgresql" {
+		case "postgresql":
 			return 5432
 		}
 	}

@@ -17,5 +17,5 @@ go.work
 go.work.sum
 .trae
 downloads/
-admin/dist/
-admin/node_modules/
+cmd/admin/dist/
+cmd/admin/node_modules/
