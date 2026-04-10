@@ -39,6 +39,9 @@
   <!-- 复制代码插件 -->
   <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
   <script>
+    // 获取当前访问的域名（包括协议和端口）
+    var currentDomain = window.location.protocol + '//' + window.location.host;
+    
     window.$docsify = {
       name: 'Xrcuo API',
       repo: 'https://github.com/xrcuo/xrcuo-api',
@@ -54,7 +57,21 @@
         buttonText: '复制',
         errorText: '错误',
         successText: '已复制'
-      }
+      },
+      // 钩子函数，在渲染完成后替换 YOUR_DOMAIN
+      plugins: [
+        function(hook, vm) {
+          hook.doneEach(function() {
+            // 替换页面中所有的 YOUR_DOMAIN 为当前域名
+            var content = document.querySelector('#main');
+            if (content) {
+              var html = content.innerHTML;
+              html = html.replace(/YOUR_DOMAIN/g, currentDomain);
+              content.innerHTML = html;
+            }
+          });
+        }
+      ]
     }
   </script>
 </body>
