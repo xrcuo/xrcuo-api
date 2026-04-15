@@ -78,8 +78,6 @@ func SetupGin() *gin.Engine {
 }
 
 func SetupStaticFiles(r *gin.Engine) {
-	r.Static("/images", "./images")
-
 	staticFS, err := fs.Sub(embeddedFiles, "static")
 	if err != nil {
 		logrus.Fatalf("获取static子目录失败：%v", err)

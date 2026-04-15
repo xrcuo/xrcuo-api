@@ -2,7 +2,6 @@ package config
 
 import (
 	_ "embed"
-	"log"
 	"os"
 	"sync"
 	"time"
@@ -171,7 +170,7 @@ func (cm *ConfigManager) ParseConfig() {
 		gin.SetMode(cm.GetConfig().Server.Mode)
 		logrus.Infof("Gin模式已更新为: %s", cm.GetConfig().Server.Mode)
 		cm.executeUpdateCallbacks(config)
-		log.Println("配置更新应用完成")
+		logrus.Info("配置更新应用完成")
 	}
 }
 

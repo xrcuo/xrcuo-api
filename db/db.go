@@ -439,44 +439,10 @@ func GetDB() *sql.DB {
 	return DB
 }
 
-func Transaction(fn func(tx *sql.Tx) error) error {
-	tx, err := DB.Begin()
-	if err != nil {
-		return fmt.Errorf("开启事务失败: %v", err)
-	}
-
-	if err := fn(tx); err != nil {
-		if rollbackErr := tx.Rollback(); rollbackErr != nil {
-			return fmt.Errorf("事务回滚失败: %v, 原始错误: %v", rollbackErr, err)
-		}
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return fmt.Errorf("提交事务失败: %v", err)
-	}
-
-	return nil
-}
-
-func WithTransaction(tx *sql.Tx, query string, args ...interface{}) (*sql.Rows, error) {
-	if tx != nil {
-		return tx.Query(query, args...)
-	}
-	return DB.Query(query, args...)
-}
-
 func GetPlaceholder(n int) string {
 	dbType := config.GetDatabaseType()
 	if dbType == "postgresql" {
 		return fmt.Sprintf("$%d", n)
 	}
 	return "?"
-}
-
-func WithTransactionExec(tx *sql.Tx, query string, args ...interface{}) (sql.Result, error) {
-	if tx != nil {
-		return tx.Exec(query, args...)
-	}
-	return DB.Exec(query, args...)
 }
