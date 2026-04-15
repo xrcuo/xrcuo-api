@@ -84,8 +84,13 @@ func GetRegionByIP(ip string) (RegionParts, error) {
 		return RegionParts{}, fmt.Errorf("IP查询失败：%v", err)
 	}
 
+	logrus.Debugf("IP查询原始结果: IP=%s, Raw=%s", ip, regionRaw)
+
 	// 解析地区字符串（适配4段格式：国家|省份|城市|ISP）
-	return parseRegionRaw(regionRaw), nil
+	result := parseRegionRaw(regionRaw)
+	logrus.Debugf("IP查询解析结果: %+v", result)
+
+	return result, nil
 }
 
 // CloseIP2Region 关闭IP2Region服务
@@ -101,21 +106,29 @@ func parseRegionRaw(regionRaw string) RegionParts {
 	parts := strings.Split(regionRaw, "|")
 	result := RegionParts{}
 
+	// 定义一个辅助函数，保留更多数据
+	keepField := func(field string) string {
+		if field == "0" || field == "" {
+			return ""
+		}
+		return field
+	}
+
 	switch len(parts) {
 	case 4:
-		result.Isp = parseEmptyField(parts[3])
-		result.City = parseEmptyField(parts[2])
-		result.Province = parseEmptyField(parts[1])
-		result.Country = parseEmptyField(parts[0])
+		result.Isp = keepField(parts[3])
+		result.City = keepField(parts[2])
+		result.Province = keepField(parts[1])
+		result.Country = keepField(parts[0])
 	case 3:
-		result.City = parseEmptyField(parts[2])
-		result.Province = parseEmptyField(parts[1])
-		result.Country = parseEmptyField(parts[0])
+		result.City = keepField(parts[2])
+		result.Province = keepField(parts[1])
+		result.Country = keepField(parts[0])
 	case 2:
-		result.Province = parseEmptyField(parts[1])
-		result.Country = parseEmptyField(parts[0])
+		result.Province = keepField(parts[1])
+		result.Country = keepField(parts[0])
 	case 1:
-		result.Country = parseEmptyField(parts[0])
+		result.Country = keepField(parts[0])
 	}
 
 	return result
@@ -123,13 +136,13 @@ func parseRegionRaw(regionRaw string) RegionParts {
 
 // parseEmptyField 处理空字段（"0"或空字符串转为""）
 func parseEmptyField(field string) string {
-	if field == "0" || field == "" || field == "未知" {
+	if field == "0" || field == "" {
 		return ""
 	}
 	return field
 }
 
-// JoinNonEmpty 合并非空字符串（忽略空值，无分隔符）
+// JoinNonEmpty 合并非空字符串（忽略空值）
 func JoinNonEmpty(strs []string, sep string) string {
 	var result []string
 	for _, s := range strs {
@@ -143,33 +156,33 @@ func JoinNonEmpty(strs []string, sep string) string {
 // downloadFile 下载文件到指定路径
 func downloadFile(url, filePath string) error {
 	logrus.Infof("正在下载文件: %s -> %s", url, filePath)
-	
+
 	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("下载请求失败: %v", err)
 	}
 	defer resp.Body.Close()
-	
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("下载失败，HTTP状态码: %d", resp.StatusCode)
 	}
-	
+
 	dir := filepath.Dir(filePath)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return fmt.Errorf("创建目录失败: %v", err)
 	}
-	
+
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("创建文件失败: %v", err)
 	}
 	defer file.Close()
-	
+
 	_, err = io.Copy(file, resp.Body)
 	if err != nil {
 		return fmt.Errorf("写入文件失败: %v", err)
 	}
-	
+
 	logrus.Infof("文件下载成功: %s", filePath)
 	return nil
 }
@@ -180,9 +193,9 @@ func checkAndDownloadDB(dbPath, dbType string) error {
 		logrus.Infof("%s数据库文件已存在: %s", dbType, dbPath)
 		return nil
 	}
-	
+
 	logrus.Warnf("%s数据库文件不存在，准备自动下载: %s", dbType, dbPath)
-	
+
 	var downloadURL string
 	switch dbType {
 	case "IPv4":
@@ -192,10 +205,10 @@ func checkAndDownloadDB(dbPath, dbType string) error {
 	default:
 		return fmt.Errorf("未知的数据库类型: %s", dbType)
 	}
-	
+
 	if err := downloadFile(downloadURL, dbPath); err != nil {
 		return fmt.Errorf("下载%s数据库失败: %v", dbType, err)
 	}
-	
+
 	return nil
 }

@@ -22,15 +22,6 @@ log:
   compress: true  # 是否压缩旧的日志文件
   new_file_on_startup: true  # 每次启动是否创建新的日志文件
 
-# 随机图片配置
-random_image:
-  local_enabled: false  # 是否启用本地图片
-  local_path: "images/"  # 本地图片目录路径
-
-# 下载配置
-download:
-  path: "downloads/"  # 下载文件目录路径
-
 # 数据库配置
 database:
   type: "sqlite"  # 数据库类型：sqlite, mysql, postgresql

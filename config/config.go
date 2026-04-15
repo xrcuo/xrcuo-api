@@ -53,15 +53,6 @@ type Config struct {
 		Compress         bool   `yaml:"compress"`
 		NewFileOnStartup bool   `yaml:"new_file_on_startup"`
 	} `yaml:"log"`
-
-	RandomImage struct {
-		LocalEnabled bool   `yaml:"local_enabled"`
-		LocalPath    string `yaml:"local_path"`
-	} `yaml:"random_image"`
-
-	Download struct {
-		Path string `yaml:"path"`
-	} `yaml:"download"`
 }
 
 // ConfigUpdateCallback 配置更新回调函数类型
@@ -376,20 +367,6 @@ func GetLogLevel() string {
 		return "info"
 	}
 	return config.Log.Level
-}
-
-func GetDownloadPath() string {
-	cm := GetInstance()
-	config := cm.GetConfig()
-	if config == nil || config.Download.Path == "" {
-		return "./downloads"
-	}
-	downloadPath := config.Download.Path
-	if err := os.MkdirAll(downloadPath, 0755); err != nil {
-		logrus.Warnf("创建下载目录失败: %v, 使用默认目录", err)
-		return "./downloads"
-	}
-	return downloadPath
 }
 
 func GetDatabaseType() string {

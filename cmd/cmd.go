@@ -19,7 +19,6 @@ import (
 	"github.com/xrcuo/xrcuo-api/db"
 	"github.com/xrcuo/xrcuo-api/log"
 	"github.com/xrcuo/xrcuo-api/plugin"
-	"github.com/xrcuo/xrcuo-api/plugin/download"
 )
 
 //go:embed static
@@ -135,15 +134,7 @@ func SetupRoutes(r *gin.Engine) {
 		pluginManager.RegisterAll(apiGroup)
 	}
 
-	downloadGroup := r.Group("/download")
-	{
-		downloadGroup.GET("/*filepath", download.DownloadHandler)
-	}
 
-	apiDownloadGroup := r.Group("/api/download")
-	{
-		apiDownloadGroup.GET("/*filepath", download.DownloadHandler)
-	}
 
 	r.GET("/stats", common.StatsHandler)
 	r.GET("/api/stats", common.StatsAPIHandler)

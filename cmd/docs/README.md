@@ -6,7 +6,7 @@
 
 - **插件化架构**：支持动态添加和管理 API 插件
 - **统计功能**：实时统计 API 请求次数和响应时间
-- **多种 API 插件**：内置 IP 查询、Ping 测试、随机数生成、MCPE服务器查询等实用插件
+- **多种 API 插件**：内置 IP 查询、Ping 测试、MCPE服务器查询等实用插件
 - **跨域支持**：内置 CORS 中间件
 - **速率限制**：防止 API 滥用
 - **请求日志**：详细记录每个请求的信息
@@ -52,14 +52,9 @@
 |------|------|------|
 | IP查询 | `/api/ip` | 查询IP归属地信息 |
 | Ping测试 | `/api/ping` | 对目标进行Ping测试 |
-| 随机数生成 | `/api/random` | 生成指定范围随机整数 |
-| 随机图片 | `/api/random/image` | 获取随机图片 |
-| 随机图片信息 | `/api/random/image/info` | 获取随机图片信息 |
 | 客户端信息 | `/api/client` | 获取客户端详细信息 |
 | 公网IP | `/api/ipify` | 获取客户端公网IP |
 | MCPE查询 | `/api/mcpe/status` | 查询Minecraft PE服务器状态 |
-| 文件下载 | `/download/{file}` | 下载本地文件 |
-| API下载 | `/api/download/{file}` | 下载本地文件 |
 
 ## 通用 API 格式
 
@@ -90,11 +85,9 @@ xrcuo-api/
 ├── plugin/          # 插件目录
 │   ├── ip/          # IP 查询插件
 │   ├── ping/        # Ping 测试插件
-│   ├── random/      # 随机数插件
 │   ├── mcpe/        # MCPE服务器查询插件
 │   ├── client/      # 客户端信息插件
-│   ├── ipify/       # 公网IP插件
-│   └── download/    # 文件下载插件
+│   └── ipify/       # 公网IP插件
 ├── static/          # 静态资源
 ├── templates/       # HTML 模板
 ├── config.yaml      # 配置文件
@@ -111,7 +104,5 @@ xrcuo-api/
 - **database**: 数据库配置
 - **ip2region**: IP地址库配置
 - **log**: 日志配置
-- **random_image**: 随机图片配置
-- **download**: 下载目录配置
 
 详细配置说明请参阅 [配置说明](config.md)

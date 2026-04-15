@@ -10,13 +10,18 @@ import (
 	"time"
 )
 
-// IsPrivateIP 判断是否为内网IP
+// IsPrivateIP 判断是否为内网IP或回环地址
 func IsPrivateIP(ip string) bool {
 	ipAddr := net.ParseIP(ip)
 	if ipAddr == nil {
 		return false
 	}
-	return ipAddr.IsPrivate() // 内置方法判断内网IP（10.0.0.0/8、172.16.0.0/12、192.168.0.0/16）
+	// 检查是否为回环地址（127.0.0.1 或 ::1）
+	if ipAddr.IsLoopback() {
+		return true
+	}
+	// 检查是否为私有内网IP
+	return ipAddr.IsPrivate()
 }
 
 // ResolveTarget 解析目标（域名→IP，IP直接返回）

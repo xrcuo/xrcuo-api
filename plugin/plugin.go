@@ -8,7 +8,6 @@ import (
 	"github.com/xrcuo/xrcuo-api/plugin/ipify"
 	"github.com/xrcuo/xrcuo-api/plugin/mcpe"
 	"github.com/xrcuo/xrcuo-api/plugin/ping"
-	"github.com/xrcuo/xrcuo-api/plugin/random"
 )
 
 // Plugin 插件接口
@@ -139,7 +138,6 @@ func (pm *PluginManager) DisablePlugin(name string) bool {
 func (pm *PluginManager) RegisterBuiltinPlugins() {
 	pm.Register(ip.IPPlugin)
 	pm.Register(ping.PingPlugin)
-	pm.Register(random.RandomPlugin)
 	pm.Register(client.ClientPlugin)
 	pm.Register(ipify.IpifyPlugin)
 	pm.Register(mcpe.MCPEPlugin)

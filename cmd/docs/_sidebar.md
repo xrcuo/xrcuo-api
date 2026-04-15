@@ -2,12 +2,9 @@
 * API文档
   * [IP查询](api/ip.md)
   * [Ping测试](api/ping.md)
-  * [随机数生成](api/random.md)
-  * [随机图片](api/random_image.md)
   * [客户端信息](api/client.md)
   * [获取公网IP](api/ipify.md)
   * [MCPE服务器查询](api/mcpe.md)
-  * [文件下载](api/download.md)
 * [统计功能](stats.md)
 * [配置说明](config.md)
 * [开发指南](development.md)
