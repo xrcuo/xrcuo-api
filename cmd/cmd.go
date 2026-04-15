@@ -3,8 +3,6 @@ package cmd
 import (
 	"context"
 	"embed"
-	"fmt"
-	"html/template"
 	"io/fs"
 	"net/http"
 	"os"
@@ -22,8 +20,6 @@ import (
 )
 
 //go:embed static
-//go:embed templates
-//go:embed admin/dist
 //go:embed docs
 //go:embed docs/_sidebar.md
 var embeddedFiles embed.FS
@@ -79,24 +75,6 @@ func SetupGin() *gin.Engine {
 	return r
 }
 
-func SetupTemplates(r *gin.Engine) {
-	funcMap := template.FuncMap{
-		"percentage": func(total, count int64) string {
-			if total == 0 {
-				return "0%"
-			}
-			return fmt.Sprintf("%d%%", int((float64(count)/float64(total))*100))
-		},
-	}
-
-	tmpls, err := template.New("").Funcs(funcMap).ParseFS(embeddedFiles, "templates/*")
-	if err != nil {
-		logrus.Fatalf("加载模板失败：%v", err)
-	}
-
-	r.SetHTMLTemplate(tmpls)
-}
-
 func SetupStaticFiles(r *gin.Engine) {
 	r.Static("/images", "./images")
 
@@ -134,16 +112,8 @@ func SetupRoutes(r *gin.Engine) {
 		pluginManager.RegisterAll(apiGroup)
 	}
 
-
-
 	r.GET("/stats", common.StatsHandler)
 	r.GET("/api/stats", common.StatsAPIHandler)
-
-	adminFS, err := fs.Sub(embeddedFiles, "admin/dist")
-	if err != nil {
-		logrus.Fatalf("获取admin/dist子目录失败：%v", err)
-	}
-	r.StaticFS("/admin", http.FS(adminFS))
 
 	r.GET("/", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/docs/")
@@ -155,7 +125,6 @@ func StartServer(r *gin.Engine) {
 	port := config.GetServerPort()
 	logrus.Infof("服务启动成功，监听地址：http://localhost%s", port)
 	logrus.Infof("API文档：http://localhost%s/docs/", port)
-	logrus.Infof("管理后台：http://localhost%s/admin/", port)
 	logrus.Infof("IP地址查询：http://localhost%s/api/ip?ip=114.114.114.114", port)
 	logrus.Infof("获取访问者IP：http://localhost%s/api/ipify", port)
 	logrus.Infof("Ping接口示例：http://localhost%s/api/ping?target=www.baidu.com&count=3", port)

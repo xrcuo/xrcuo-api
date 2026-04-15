@@ -25,7 +25,6 @@ func main() {
 	}()
 
 	r := cmd.SetupGin()
-	cmd.SetupTemplates(r)
 	cmd.SetupStaticFiles(r)
 	cmd.SetupRoutes(r)
 	cmd.StartServer(r)
