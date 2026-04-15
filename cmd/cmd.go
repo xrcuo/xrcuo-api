@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,6 +23,7 @@ import (
 //go:embed static
 //go:embed docs
 //go:embed docs/_sidebar.md
+//go:embed web
 var embeddedFiles embed.FS
 
 var GlobalPluginManager *plugin.PluginManager
@@ -115,8 +117,36 @@ func SetupRoutes(r *gin.Engine) {
 	r.GET("/stats", common.StatsHandler)
 	r.GET("/api/stats", common.StatsAPIHandler)
 
-	r.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/docs/")
+	webFS, _ := fs.Sub(embeddedFiles, "web")
+	r.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		if path == "/" {
+			path = "/index.html"
+		}
+		if path[0] == '/' {
+			path = path[1:]
+		}
+		data, err := fs.ReadFile(webFS, path)
+		if err != nil {
+			c.String(http.StatusNotFound, "File not found: %s", path)
+			return
+		}
+		contentType := "text/plain"
+		switch {
+		case strings.HasSuffix(path, ".html"):
+			contentType = "text/html; charset=utf-8"
+		case strings.HasSuffix(path, ".css"):
+			contentType = "text/css; charset=utf-8"
+		case strings.HasSuffix(path, ".js"):
+			contentType = "application/javascript; charset=utf-8"
+		case strings.HasSuffix(path, ".png"):
+			contentType = "image/png"
+		case strings.HasSuffix(path, ".jpg") || strings.HasSuffix(path, ".jpeg"):
+			contentType = "image/jpeg"
+		case strings.HasSuffix(path, ".ico"):
+			contentType = "image/x-icon"
+		}
+		c.Data(http.StatusOK, contentType, data)
 	})
 }
 
