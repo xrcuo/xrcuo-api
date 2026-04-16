@@ -33,3 +33,8 @@ database:
   dbname: "xrcuo_api"  # 数据库名称（mysql/postgresql使用）
   max_open_conns: 10  # 最大打开连接数
   max_idle_conns: 5  # 最大空闲连接数
+
+# 速率限制配置
+rate_limit:
+  capacity: 500  # 令牌桶容量（最大突发请求数）
+  rate: 10  # 令牌生成速率（每秒令牌数）

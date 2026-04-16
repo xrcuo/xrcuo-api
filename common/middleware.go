@@ -106,14 +106,17 @@ type rateLimiter struct {
 
 var globalRateLimiter *rateLimiter
 
-func init() {
+func InitRateLimiter() {
 	globalRateLimiter = &rateLimiter{
 		buckets:         make(map[string]*tokenBucket),
-		capacity:        100,
-		rate:            1.666,
+		capacity:        config.GetRateLimitCapacity(),
+		rate:            config.GetRateLimitRate(),
 		cleanupInterval: 10 * time.Minute,
 		inactiveTimeout: 30 * time.Minute,
 	}
+
+	logrus.Infof("速率限制器已初始化: 容量=%f, 速率=%f/秒", 
+		globalRateLimiter.capacity, globalRateLimiter.rate)
 
 	go func() {
 		ticker := time.NewTicker(globalRateLimiter.cleanupInterval)
@@ -124,7 +127,6 @@ func init() {
 		}
 	}()
 }
-
 
 func (rl *rateLimiter) Allow(key string) bool {
 	rl.mutex.RLock()

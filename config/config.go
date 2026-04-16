@@ -52,6 +52,11 @@ type Config struct {
 		Compress         bool   `yaml:"compress"`
 		NewFileOnStartup bool   `yaml:"new_file_on_startup"`
 	} `yaml:"log"`
+
+	RateLimit struct {
+		Capacity float64 `yaml:"capacity"`
+		Rate     float64 `yaml:"rate"`
+	} `yaml:"rate_limit"`
 }
 
 // ConfigUpdateCallback 配置更新回调函数类型
@@ -206,6 +211,16 @@ func (cm *ConfigManager) validateConfig(config *Config) {
 	if config.Log.MaxAge <= 0 {
 		logrus.Warnf("无效的日志文件保留天数: %d, 使用默认值: 7", config.Log.MaxAge)
 		config.Log.MaxAge = 7
+	}
+
+	if config.RateLimit.Capacity <= 0 {
+		logrus.Warnf("无效的速率限制容量: %f, 使用默认值: 500", config.RateLimit.Capacity)
+		config.RateLimit.Capacity = 500
+	}
+
+	if config.RateLimit.Rate <= 0 {
+		logrus.Warnf("无效的速率限制速率: %f, 使用默认值: 10", config.RateLimit.Rate)
+		config.RateLimit.Rate = 10
 	}
 
 	logrus.Debug("配置验证完成")
@@ -426,4 +441,22 @@ func GetDatabaseName() string {
 		return "xrcuo_api"
 	}
 	return config.Database.DBName
+}
+
+func GetRateLimitCapacity() float64 {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil || config.RateLimit.Capacity <= 0 {
+		return 500
+	}
+	return config.RateLimit.Capacity
+}
+
+func GetRateLimitRate() float64 {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil || config.RateLimit.Rate <= 0 {
+		return 10
+	}
+	return config.RateLimit.Rate
 }

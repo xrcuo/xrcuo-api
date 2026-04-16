@@ -41,7 +41,7 @@ func InitApp() {
 
 		common.CloseIP2Region()
 		if err := common.InitIP2Region(); err != nil {
-			logrus.Errorf("IP2Region服务重新初始化失败: %v", err)
+			logrus.Errorf("IP2Region服务重新初始化失败：%v", err)
 		} else {
 			logrus.Info("IP2Region服务已重新初始化")
 		}
@@ -59,6 +59,7 @@ func InitApp() {
 		logrus.Fatalf("IP2Region数据库初始化失败：%v", err)
 	}
 
+	common.InitRateLimiter()
 	common.InitStats()
 }
 
