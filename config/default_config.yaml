@@ -37,6 +37,11 @@ database:
 rate_limit:
   capacity: 100    # 令牌桶容量（最大突发请求数）
   rate:  1.666         # 令牌生成速率（每秒令牌数）
+
+# 随机图片配置
+random_image:
+  local_enabled: false  # 是否启用本地随机图片
+  local_path: "./data/images"  # 本地图片目录路径
   
 # 网站信息配置
 site:

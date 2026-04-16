@@ -78,6 +78,11 @@ type Config struct {
 		Capacity float64 `yaml:"capacity"`
 		Rate     float64 `yaml:"rate"`
 	} `yaml:"rate_limit"`
+
+	RandomImage struct {
+		LocalEnabled bool   `yaml:"local_enabled"`
+		LocalPath    string `yaml:"local_path"`
+	} `yaml:"random_image"`
 }
 
 // ConfigUpdateCallback 配置更新回调函数类型
@@ -285,6 +290,10 @@ func (cm *ConfigManager) validateConfig(config *Config) {
 	}
 	if config.Site.Contact.Email == "" {
 		config.Site.Contact.Email = "https://mail.qq.com/"
+	}
+
+	if config.RandomImage.LocalPath == "" {
+		config.RandomImage.LocalPath = "./data/images"
 	}
 
 	logrus.Debug("配置验证完成")
