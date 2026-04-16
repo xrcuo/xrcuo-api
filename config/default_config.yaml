@@ -38,3 +38,22 @@ database:
 rate_limit:
   capacity: 500  # 令牌桶容量（最大突发请求数）
   rate: 10  # 令牌生成速率（每秒令牌数）
+
+# 网站信息配置
+site:
+  title: "YILXIYY｜二次元の小窝"  # 网站标题
+  name: "林熙"  # 网站名称/用户名
+  motto: "人海中遇见的人终将归还人海"  # 座右铭
+  avatar_url: "https://yilx.net/tx.jpg"  # 头像URL
+  icp: "沪ICP备1234567890号-1"  # ICP备案号
+  copyright: "© 2026 伊linxiyy. All rights reserved."  # 版权信息
+  links:
+    blog: "/"  # 博客链接
+    cdk: "/"  # CDK兑换链接
+    api: "/docs/"  # API/统计链接
+    about: "/"  # 关于页面链接
+  contact:
+    github: "https://github.com/xrcuo"  # GitHub链接
+    zhihu: "https://www.zhihu.com/"  # 知乎链接
+    weibo: "https://weibo.com/"  # 微博链接
+    email: "https://mail.qq.com/"  # 邮箱链接

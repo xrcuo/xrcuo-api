@@ -24,6 +24,27 @@ type Config struct {
 		} `yaml:"json_format"`
 	} `yaml:"server"`
 
+	Site struct {
+		Title     string `yaml:"title"`
+		Name      string `yaml:"name"`
+		Motto     string `yaml:"motto"`
+		AvatarURL string `yaml:"avatar_url"`
+		ICP       string `yaml:"icp"`
+		Copyright string `yaml:"copyright"`
+		Links     struct {
+			Blog  string `yaml:"blog"`
+			CDK   string `yaml:"cdk"`
+			API   string `yaml:"api"`
+			About string `yaml:"about"`
+		} `yaml:"links"`
+		Contact struct {
+			GitHub string `yaml:"github"`
+			Zhihu  string `yaml:"zhihu"`
+			Weibo  string `yaml:"weibo"`
+			Email  string `yaml:"email"`
+		} `yaml:"contact"`
+	} `yaml:"site"`
+
 	Database struct {
 		Type         string `yaml:"type"`
 		Path         string `yaml:"path"`
@@ -221,6 +242,49 @@ func (cm *ConfigManager) validateConfig(config *Config) {
 	if config.RateLimit.Rate <= 0 {
 		logrus.Warnf("无效的速率限制速率: %f, 使用默认值: 10", config.RateLimit.Rate)
 		config.RateLimit.Rate = 10
+	}
+
+	if config.Site.Title == "" {
+		config.Site.Title = "YILXIYY｜二次元の小窝"
+	}
+	if config.Site.Name == "" {
+		config.Site.Name = "林熙"
+	}
+	if config.Site.Motto == "" {
+		config.Site.Motto = "人海中遇见的人终将归还人海"
+	}
+	if config.Site.AvatarURL == "" {
+		config.Site.AvatarURL = "https://yilx.net/tx.jpg"
+	}
+	if config.Site.ICP == "" {
+		config.Site.ICP = "沪ICP备1234567890号-1"
+	}
+	if config.Site.Copyright == "" {
+		config.Site.Copyright = "© 2025 伊linxiyy. All rights reserved."
+	}
+	if config.Site.Links.Blog == "" {
+		config.Site.Links.Blog = "https://blog.yilx.net/"
+	}
+	if config.Site.Links.CDK == "" {
+		config.Site.Links.CDK = "https://cdk.yilx.net"
+	}
+	if config.Site.Links.API == "" {
+		config.Site.Links.API = "https://api.yilx.net"
+	}
+	if config.Site.Links.About == "" {
+		config.Site.Links.About = "https://blog.yilx.net/about.html"
+	}
+	if config.Site.Contact.GitHub == "" {
+		config.Site.Contact.GitHub = "https://github.com/"
+	}
+	if config.Site.Contact.Zhihu == "" {
+		config.Site.Contact.Zhihu = "https://www.zhihu.com/"
+	}
+	if config.Site.Contact.Weibo == "" {
+		config.Site.Contact.Weibo = "https://weibo.com/"
+	}
+	if config.Site.Contact.Email == "" {
+		config.Site.Contact.Email = "https://mail.qq.com/"
 	}
 
 	logrus.Debug("配置验证完成")
@@ -459,4 +523,128 @@ func GetRateLimitRate() float64 {
 		return 10
 	}
 	return config.RateLimit.Rate
+}
+
+func GetSiteTitle() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil {
+		return "YILXIYY｜二次元の小窝"
+	}
+	return config.Site.Title
+}
+
+func GetSiteName() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil {
+		return "林熙"
+	}
+	return config.Site.Name
+}
+
+func GetSiteMotto() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil {
+		return "人海中遇见的人终将归还人海"
+	}
+	return config.Site.Motto
+}
+
+func GetSiteAvatarURL() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil {
+		return "https://yilx.net/tx.jpg"
+	}
+	return config.Site.AvatarURL
+}
+
+func GetSiteICP() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil {
+		return "沪ICP备1234567890号-1"
+	}
+	return config.Site.ICP
+}
+
+func GetSiteCopyright() string {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	if config == nil {
+		return "© 2025 伊linxiyy. All rights reserved."
+	}
+	return config.Site.Copyright
+}
+
+func GetSiteLinks() struct {
+	Blog  string
+	CDK   string
+	API   string
+	About string
+} {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	defaultLinks := struct {
+		Blog  string
+		CDK   string
+		API   string
+		About string
+	}{
+		Blog:  "https://blog.yilx.net/",
+		CDK:   "https://cdk.yilx.net",
+		API:   "https://api.yilx.net",
+		About: "https://blog.yilx.net/about.html",
+	}
+	if config == nil {
+		return defaultLinks
+	}
+	return struct {
+		Blog  string
+		CDK   string
+		API   string
+		About string
+	}{
+		Blog:  config.Site.Links.Blog,
+		CDK:   config.Site.Links.CDK,
+		API:   config.Site.Links.API,
+		About: config.Site.Links.About,
+	}
+}
+
+func GetSiteContact() struct {
+	GitHub string
+	Zhihu  string
+	Weibo  string
+	Email  string
+} {
+	cm := GetInstance()
+	config := cm.GetConfig()
+	defaultContact := struct {
+		GitHub string
+		Zhihu  string
+		Weibo  string
+		Email  string
+	}{
+		GitHub: "https://github.com/",
+		Zhihu:  "https://www.zhihu.com/",
+		Weibo:  "https://weibo.com/",
+		Email:  "https://mail.qq.com/",
+	}
+	if config == nil {
+		return defaultContact
+	}
+	return struct {
+		GitHub string
+		Zhihu  string
+		Weibo  string
+		Email  string
+	}{
+		GitHub: config.Site.Contact.GitHub,
+		Zhihu:  config.Site.Contact.Zhihu,
+		Weibo:  config.Site.Contact.Weibo,
+		Email:  config.Site.Contact.Email,
+	}
 }

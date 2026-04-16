@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"embed"
+	"html/template"
 	"io/fs"
 	"net/http"
 	"os"
@@ -117,11 +118,40 @@ func SetupRoutes(r *gin.Engine) {
 	r.GET("/api/stats", common.StatsAPIHandler)
 
 	webFS, _ := fs.Sub(embeddedFiles, "web")
+
+	r.GET("/", func(c *gin.Context) {
+		siteConfig := config.GetInstance().GetConfig()
+		
+		tmplContent, err := fs.ReadFile(webFS, "index.html")
+		if err != nil {
+			c.String(http.StatusInternalServerError, "Failed to read template: %v", err)
+			return
+		}
+
+		tmpl, err := template.New("index.html").Parse(string(tmplContent))
+		if err != nil {
+			c.String(http.StatusInternalServerError, "Failed to parse template: %v", err)
+			return
+		}
+
+		c.Header("Content-Type", "text/html; charset=utf-8")
+		err = tmpl.Execute(c.Writer, gin.H{
+			"Title":     siteConfig.Site.Title,
+			"Name":      siteConfig.Site.Name,
+			"Motto":     siteConfig.Site.Motto,
+			"AvatarURL": siteConfig.Site.AvatarURL,
+			"ICP":       siteConfig.Site.ICP,
+			"Copyright": siteConfig.Site.Copyright,
+			"Links":     siteConfig.Site.Links,
+			"Contact":   siteConfig.Site.Contact,
+		})
+		if err != nil {
+			c.String(http.StatusInternalServerError, "Failed to execute template: %v", err)
+		}
+	})
+
 	r.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
-		if path == "/" {
-			path = "/index.html"
-		}
 		if path[0] == '/' {
 			path = path[1:]
 		}

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YILXIYY｜二次元の小窝</title>
+    <title>{{.Title}}</title>
     <link rel="icon" href="/static/image/favicon.ico" type="image/x-icon">
     <link rel="stylesheet" href="/static/css/index.css">
 </head>
@@ -16,28 +16,25 @@
         <!-- pc端顶部导航栏 -->
         <div class="header">
             <div class="header_box">
-                <div class="logo">
-                    <img src="/static/image/logo.png" alt="logo">
-                </div>
                 <div class="bar">
                     <span class="bar_btn">
                         <a class="nav-item active" data-page="home" href="#">
                             <i class="menu-icon">🏠</i>
                             <span>首页</span>
                         </a>
-                        <a class="nav-item" data-page="blog" href="https://blog.yilx.net/" target="_blank">
+                        <a class="nav-item" data-page="blog" href="{{.Links.Blog}}" target="_blank">
                             <i class="menu-icon">📝</i>
                             <span>博客</span>
                         </a>
-                        <a class="nav-item" data-page="cdk" href="https://cdk.yilx.net" target="_blank">
+                        <a class="nav-item" data-page="cdk" href="{{.Links.CDK}}" target="_blank">
                             <i class="menu-icon">🌟</i>
                             <span>CDK兑换</span>
                         </a>
-                        <a class="nav-item" data-page="api" href="https://api.yilx.net" target="_blank">
+                        <a class="nav-item" data-page="api" href="{{.Links.API}}" target="_blank">
                             <i class="menu-icon">🔒</i>
                             <span>API/统计</span>
                         </a>
-                        <a class="nav-item" data-page="about" href="https://blog.yilx.net/about.html" target="_blank">
+                        <a class="nav-item" data-page="about" href="{{.Links.About}}" target="_blank">
                             <i class="menu-icon">💫</i>
                             <span>关于</span>
                         </a>
@@ -50,9 +47,9 @@
         <div class="sidebar" id="sidebar">
             <!-- 添加头像和个人信息区域 -->
             <div class="sidebar-profile">
-                <img src="https://yilx.net/tx.jpg" alt="头像" class="sidebar-avatar">
+                <img src="{{.AvatarURL}}" alt="头像" class="sidebar-avatar">
                 <div class="sidebar-info">
-                    <h3>林熙</h3>
+                    <h3>{{.Name}}</h3>
                     <p>欢迎光临我的小站~</p>
                 </div>
             </div>
@@ -61,19 +58,19 @@
                 <i class="menu-icon">🏠</i>
                 <span>首页</span>
             </a>
-            <a class="menu-item" data-page="blog" href="https://blog.yilx.net/" target="_blank">
+            <a class="menu-item" data-page="blog" href="{{.Links.Blog}}" target="_blank">
                 <i class="menu-icon">📝</i>
                 <span>博客</span>
             </a>
-            <a class="menu-item" data-page="cdk" href="https://cdk.yilx.net" target="_blank">
+            <a class="menu-item" data-page="cdk" href="{{.Links.CDK}}" target="_blank">
                 <i class="menu-icon">🌟</i>
                 <span>CDK兑换</span>
             </a>
-            <a class="menu-item" data-page="api" href="https://api.yilx.net" target="_blank">
+            <a class="menu-item" data-page="api" href="{{.Links.API}}" target="_blank">
                 <i class="menu-icon">🔒</i>
                 <span>API/统计</span>
             </a>
-            <a class="menu-item" data-page="about" href="https://blog.yilx.net/about.html" target="_blank">
+            <a class="menu-item" data-page="about" href="{{.Links.About}}" target="_blank">
                 <i class="menu-icon">💫</i>
                 <span>关于</span>
             </a>
@@ -90,22 +87,22 @@
         <!-- 中间内容 -->
         <div class="main_center">
             <div class="main_cn">
-                <img src="https://yilx.net/tx.jpg" alt="用户头像" class="avatar">
-                <h1 class="site-title">林熙</h1>
-                <p class="motto">人海中遇见的人终将归还人海</p>
+                <img src="{{.AvatarURL}}" alt="用户头像" class="avatar">
+                <h1 class="site-title">{{.Name}}</h1>
+                <p class="motto">{{.Motto}}</p>
                 <p class="line"></p>
                 <p class="dynamics_text"><!-- 你在黄昏寄一场梦给我 满载相思的欢喜和宇宙的星辰♡ --></p>
                 <span class="contact_me">
-                    <a class="image_box" href="https://github.com/" target="_blank">
+                    <a class="image_box" href="{{.Contact.GitHub}}" target="_blank">
                         <img src="/static/image/lianxiwo/github-fill.png" alt="github">
                     </a>
-                    <a class="image_box" href="https://www.zhihu.com/" target="_blank">
+                    <a class="image_box" href="{{.Contact.Zhihu}}" target="_blank">
                         <img src="/static/image/lianxiwo/zhihu.png" alt="知乎">
                     </a>
-                    <a class="image_box" href="https://weibo.com/" target="_blank">
+                    <a class="image_box" href="{{.Contact.Weibo}}" target="_blank">
                         <img src="/static/image/lianxiwo/weibo-copy.png" alt="微博">
                     </a>
-                    <a class="image_box" href="https://mail.qq.com/" target="_blank">
+                    <a class="image_box" href="{{.Contact.Email}}" target="_blank">
                         <img src="/static/image/lianxiwo/youxiang.png" alt="邮箱">
                     </a>
                 </span>
@@ -115,8 +112,8 @@
     <!-- 页脚 -->
     <div class="footer">
         <div class="box">
-            <a href="https://beian.miit.gov.cn/">沪ICP备1234567890号-1</a>
-            <p class="text">© 2025 伊linxiyy. All rights reserved.</p>
+            <a href="https://beian.miit.gov.cn/">{{.ICP}}</a>
+            <p class="text">{{.Copyright}}</p>
         </div>
     </div>
 </body>
