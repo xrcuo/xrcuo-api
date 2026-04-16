@@ -245,7 +245,7 @@ func (cm *ConfigManager) validateConfig(config *Config) {
 	}
 
 	if config.Site.Title == "" {
-		config.Site.Title = "YILXIYY｜二次元の小窝"
+		config.Site.Title = "YVLPYY｜二次元の小窝"
 	}
 	if config.Site.Name == "" {
 		config.Site.Name = "林熙"
@@ -260,7 +260,7 @@ func (cm *ConfigManager) validateConfig(config *Config) {
 		config.Site.ICP = "沪ICP备1234567890号-1"
 	}
 	if config.Site.Copyright == "" {
-		config.Site.Copyright = "© 2025 伊linxiyy. All rights reserved."
+		config.Site.Copyright = "© 2026 YVLPYY. All rights reserved."
 	}
 	if config.Site.Links.Blog == "" {
 		config.Site.Links.Blog = "https://blog.yilx.net/"
@@ -529,7 +529,7 @@ func GetSiteTitle() string {
 	cm := GetInstance()
 	config := cm.GetConfig()
 	if config == nil {
-		return "YILXIYY｜二次元の小窝"
+		return "YVLPYY｜二次元の小窝"
 	}
 	return config.Site.Title
 }

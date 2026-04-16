@@ -34,19 +34,18 @@ database:
   max_open_conns: 10  # 最大打开连接数
   max_idle_conns: 5  # 最大空闲连接数
 
-# 速率限制配置
 rate_limit:
-  capacity: 500  # 令牌桶容量（最大突发请求数）
-  rate: 10  # 令牌生成速率（每秒令牌数）
-
+  capacity: 100    # 令牌桶容量（最大突发请求数）
+  rate:  1.666         # 令牌生成速率（每秒令牌数）
+  
 # 网站信息配置
 site:
-  title: "YILXIYY｜二次元の小窝"  # 网站标题
-  name: "林熙"  # 网站名称/用户名
+  title: "YVLPYY｜二次元の小窝 惊喜 API"  # 网站标题
+  name: "惊喜"  # 网站名称/用户名
   motto: "人海中遇见的人终将归还人海"  # 座右铭
-  avatar_url: "https://yilx.net/tx.jpg"  # 头像URL
-  icp: "沪ICP备1234567890号-1"  # ICP备案号
-  copyright: "© 2026 伊linxiyy. All rights reserved."  # 版权信息
+  avatar_url: "/static/favicon.ico"  # 头像URL
+  icp: "闽ICP备2026011617号-1"  # ICP备案号
+  copyright: "© 2026 YVLPYY. All rights reserved."  # 版权信息
   links:
     blog: "/"  # 博客链接
     cdk: "/"  # CDK兑换链接

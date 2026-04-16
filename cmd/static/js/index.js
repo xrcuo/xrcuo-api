@@ -21,12 +21,11 @@ textGradient();
 /********************** 获取一言 **********************/
 async function fetchApiData() {
   try {
-    // 发起 fetch 请求
-    const response = await fetch("https://api.kekc.cn/api/yien");
+    // 发起 fetch 请求到本地代理接口
+    const response = await fetch("/api/yiyan");
 
     // 将响应数据解析为 JSON 格式
     const data = await response.json();
-    // console.log("responseresponse", data);
     // 返回解析后的数据
     return data.cn;
   } catch (error) {
