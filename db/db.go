@@ -3,6 +3,8 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -58,6 +60,15 @@ func InitDB() error {
 
 func initSQLite() error {
 	dbPath := config.GetDatabasePath()
+	
+	// 确保数据库目录存在
+	dir := filepath.Dir(dbPath)
+	if dir != "." {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return fmt.Errorf("创建数据库目录失败: %v", err)
+		}
+	}
+	
 	var err error
 	DB, err = sql.Open("sqlite", dbPath)
 	if err != nil {
