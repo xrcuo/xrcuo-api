@@ -115,6 +115,11 @@ func parseRegionRaw(regionRaw string) RegionParts {
 	}
 
 	switch len(parts) {
+	case 5:
+		result.Isp = keepField(parts[3])
+		result.City = keepField(parts[2])
+		result.Province = keepField(parts[1])
+		result.Country = keepField(parts[0])
 	case 4:
 		result.Isp = keepField(parts[3])
 		result.City = keepField(parts[2])
