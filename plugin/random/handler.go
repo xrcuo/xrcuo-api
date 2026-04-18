@@ -156,11 +156,12 @@ func GetRandomImageInfoHandler(c *gin.Context) {
 	imageURL := imageProviders[index]
 	provider := "random"
 
-	if index == 0 {
+	switch index {
+	case 0:
 		provider = "picsum.photos"
-	} else if index == 1 {
+	case 1:
 		provider = "unsplash.com"
-	} else if index == 2 {
+	case 2:
 		provider = "random.imagecdn.app"
 	}
 

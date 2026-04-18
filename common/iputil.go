@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-// IsPrivateIP 判断是否为内网IP或回环地址
+// IsPrivateIP 判断是否为内网IP、回环地址或保留地址
 func IsPrivateIP(ip string) bool {
 	ipAddr := net.ParseIP(ip)
 	if ipAddr == nil {
@@ -21,7 +21,31 @@ func IsPrivateIP(ip string) bool {
 		return true
 	}
 	// 检查是否为私有内网IP
-	return ipAddr.IsPrivate()
+	if ipAddr.IsPrivate() {
+		return true
+	}
+	// 额外检查其他保留地址范围
+	// 198.18.0.0/15 (用于基准测试)
+	if ip4 := ipAddr.To4(); ip4 != nil {
+		if (ip4[0] == 198 && ip4[1] >= 18 && ip4[1] <= 19) ||
+			// 100.64.0.0/10 (运营商级NAT)
+			(ip4[0] == 100 && (ip4[1]&0xc0) == 0x40) ||
+			// 192.0.0.0/24 (IETF协议分配)
+			(ip4[0] == 192 && ip4[1] == 0 && ip4[2] == 0) ||
+			// 192.0.2.0/24 (文档和示例)
+			(ip4[0] == 192 && ip4[1] == 0 && ip4[2] == 2) ||
+			// 198.51.100.0/24 (文档和示例)
+			(ip4[0] == 198 && ip4[1] == 51 && ip4[2] == 100) ||
+			// 203.0.113.0/24 (文档和示例)
+			(ip4[0] == 203 && ip4[1] == 0 && ip4[2] == 113) ||
+			// 224.0.0.0/4 (多播地址)
+			(ip4[0] >= 224 && ip4[0] <= 239) ||
+			// 255.255.255.255 (广播地址)
+			(ip4[0] == 255 && ip4[1] == 255 && ip4[2] == 255 && ip4[3] == 255) {
+			return true
+		}
+	}
+	return false
 }
 
 // ResolveTarget 解析目标（域名→IP，IP直接返回）

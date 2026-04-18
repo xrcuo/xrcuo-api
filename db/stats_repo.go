@@ -176,7 +176,7 @@ func saveStatsTx(tx *sql.Tx, stats *models.Stats) error {
 	return nil
 }
 
-func upsertMethodCall(tx *sql.Tx, method string, count int64, dbType string) error {
+func upsertMethodCall(tx *sql.Tx, method string, count int64, _ string) error {
 	now := time.Now()
 	var exists bool
 	err := tx.QueryRow("SELECT COUNT(1) FROM method_calls WHERE method = "+GetPlaceholder(1), method).Scan(&exists)
@@ -194,7 +194,7 @@ func upsertMethodCall(tx *sql.Tx, method string, count int64, dbType string) err
 	return err
 }
 
-func upsertPathCall(tx *sql.Tx, path string, count int64, dbType string) error {
+func upsertPathCall(tx *sql.Tx, path string, count int64, _ string) error {
 	now := time.Now()
 	var exists bool
 	err := tx.QueryRow("SELECT COUNT(1) FROM path_calls WHERE path = "+GetPlaceholder(1), path).Scan(&exists)
@@ -212,7 +212,7 @@ func upsertPathCall(tx *sql.Tx, path string, count int64, dbType string) error {
 	return err
 }
 
-func upsertIPCall(tx *sql.Tx, ip string, count int64, dbType string) error {
+func upsertIPCall(tx *sql.Tx, ip string, count int64, _ string) error {
 	now := time.Now()
 	var exists bool
 	err := tx.QueryRow("SELECT COUNT(1) FROM ip_calls WHERE ip = "+GetPlaceholder(1), ip).Scan(&exists)
@@ -265,11 +265,12 @@ func SaveCallDetailsBatch(details []*models.CallDetail) error {
 
 	go func() {
 		dbType := config.GetDatabaseType()
-		if dbType == "sqlite" {
+		switch dbType {
+		case "sqlite":
 			DB.Exec("DELETE FROM call_details WHERE id NOT IN (SELECT id FROM call_details ORDER BY timestamp DESC LIMIT 1000)")
-		} else if dbType == "mysql" {
+		case "mysql":
 			DB.Exec("DELETE cd1 FROM call_details cd1 LEFT JOIN (SELECT id FROM call_details ORDER BY timestamp DESC LIMIT 1000) cd2 ON cd1.id = cd2.id WHERE cd2.id IS NULL")
-		} else if dbType == "postgresql" {
+		case "postgresql":
 			DB.Exec("DELETE FROM call_details WHERE id NOT IN (SELECT id FROM call_details ORDER BY timestamp DESC LIMIT 1000)")
 		}
 	}()

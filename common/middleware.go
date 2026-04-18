@@ -115,7 +115,7 @@ func InitRateLimiter() {
 		inactiveTimeout: 30 * time.Minute,
 	}
 
-	logrus.Infof("速率限制器已初始化: 容量=%f, 速率=%f/秒", 
+	logrus.Infof("速率限制器已初始化: 容量=%f, 速率=%f/秒",
 		globalRateLimiter.capacity, globalRateLimiter.rate)
 
 	go func() {
@@ -200,7 +200,7 @@ func PerformanceMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		startTime := time.Now()
 		c.Next()
-		latency := time.Now().Sub(startTime)
+		latency := time.Since(startTime)
 		c.Writer.Header().Set("X-Response-Time", latency.String())
 	}
 }

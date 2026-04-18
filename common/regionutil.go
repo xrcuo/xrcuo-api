@@ -106,9 +106,10 @@ func parseRegionRaw(regionRaw string) RegionParts {
 	parts := strings.Split(regionRaw, "|")
 	result := RegionParts{}
 
-	// 定义一个辅助函数，保留更多数据
+	// 定义一个辅助函数，保留更多数据并过滤掉无效值
 	keepField := func(field string) string {
-		if field == "0" || field == "" {
+		field = strings.TrimSpace(field)
+		if field == "0" || field == "" || strings.EqualFold(field, "reserved") {
 			return ""
 		}
 		return field
@@ -137,14 +138,6 @@ func parseRegionRaw(regionRaw string) RegionParts {
 	}
 
 	return result
-}
-
-// parseEmptyField 处理空字段（"0"或空字符串转为""）
-func parseEmptyField(field string) string {
-	if field == "0" || field == "" {
-		return ""
-	}
-	return field
 }
 
 // JoinNonEmpty 合并非空字符串（忽略空值）
@@ -177,15 +170,15 @@ func downloadFile(url, filePath string) error {
 		return fmt.Errorf("创建目录失败: %v", err)
 	}
 
-	file, err := os.Create(filePath)
-	if err != nil {
-		return fmt.Errorf("创建文件失败: %v", err)
+	file, fileErr := os.Create(filePath)
+	if fileErr != nil {
+		return fmt.Errorf("创建文件失败: %v", fileErr)
 	}
 	defer file.Close()
 
-	_, err = io.Copy(file, resp.Body)
-	if err != nil {
-		return fmt.Errorf("写入文件失败: %v", err)
+	_, copyErr := io.Copy(file, resp.Body)
+	if copyErr != nil {
+		return fmt.Errorf("写入文件失败: %v", copyErr)
 	}
 
 	logrus.Infof("文件下载成功: %s", filePath)
