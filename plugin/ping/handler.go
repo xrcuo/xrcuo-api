@@ -67,6 +67,13 @@ func PingHandler(c *gin.Context) {
 		return
 	}
 
+	// 检查是否超时（接收包数为0）
+	if pingStats.PacketsRecv == 0 {
+		response.Code = 500
+		response.Msg = "Ping超时"
+		return
+	}
+
 	// 4. 查询地区信息
 	regionParts, err := common.GetRegionByIP(ipAddr)
 	if err != nil {
