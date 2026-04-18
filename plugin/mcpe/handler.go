@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/xrcuo/xrcuo-api/common"
+	"github.com/xrcuo/xrcuo-lib/common"
 )
 
 // MCPEHandler 处理Minecraft PE服务器查询请求

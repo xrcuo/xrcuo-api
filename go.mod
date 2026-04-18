@@ -10,10 +10,13 @@ require (
 	github.com/lib/pq v1.12.2
 	github.com/lionsoul2014/ip2region/binding/golang v0.0.0-20260402032809-1209b72452ad
 	github.com/sirupsen/logrus v1.9.4
+	github.com/xrcuo/xrcuo-lib v0.0.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v3 v3.0.1
 	modernc.org/sqlite v1.48.0
 )
+
+replace github.com/xrcuo/xrcuo-lib => ./xrcuo-lib
 
 require (
 	filippo.io/edwards25519 v1.2.0 // indirect

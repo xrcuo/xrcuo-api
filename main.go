@@ -3,9 +3,9 @@ package main
 import (
 	"github.com/sirupsen/logrus"
 	"github.com/xrcuo/xrcuo-api/cmd"
-	"github.com/xrcuo/xrcuo-api/common"
-	"github.com/xrcuo/xrcuo-api/config"
-	"github.com/xrcuo/xrcuo-api/db"
+	"github.com/xrcuo/xrcuo-lib/common"
+	"github.com/xrcuo/xrcuo-lib/config"
+	"github.com/xrcuo/xrcuo-lib/db"
 )
 
 func main() {

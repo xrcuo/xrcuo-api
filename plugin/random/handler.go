@@ -10,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/xrcuo/xrcuo-api/common"
-	"github.com/xrcuo/xrcuo-api/config"
+	"github.com/xrcuo/xrcuo-lib/common"
+	"github.com/xrcuo/xrcuo-lib/config"
 )
 
 // 随机图片API提供者列表

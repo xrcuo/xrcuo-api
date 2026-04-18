@@ -7,7 +7,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-ping/ping"
-	"github.com/xrcuo/xrcuo-api/common"
+	"github.com/xrcuo/xrcuo-lib/common"
 )
 
 // // PingHandler Ping测试处理函数

@@ -12,10 +12,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	"github.com/xrcuo/xrcuo-api/common"
-	"github.com/xrcuo/xrcuo-api/config"
-	"github.com/xrcuo/xrcuo-api/db"
-	"github.com/xrcuo/xrcuo-api/log"
+	"github.com/xrcuo/xrcuo-lib/common"
+	"github.com/xrcuo/xrcuo-lib/config"
+	"github.com/xrcuo/xrcuo-lib/db"
+	"github.com/xrcuo/xrcuo-lib/log"
 	"github.com/xrcuo/xrcuo-api/plugin"
 )
 

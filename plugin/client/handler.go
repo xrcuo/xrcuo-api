@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/xrcuo/xrcuo-api/common"
+	"github.com/xrcuo/xrcuo-lib/common"
 )
 
 // GetClientInfoHandler 获取客户端信息处理函数

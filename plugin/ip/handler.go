@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/xrcuo/xrcuo-api/common"
+	"github.com/xrcuo/xrcuo-lib/common"
 )
 
 // // SearchRegionHandler IP地区查询处理函数
