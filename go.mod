@@ -6,7 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-ping/ping v1.2.0
 	github.com/sirupsen/logrus v1.9.4
-	github.com/xrcuo/xrcuo-lib v0.0.0-20260418135635-1ac9244e5ac9
+	github.com/xrcuo/xrcuo-lib v0.0.0-20260419052804-79729fede7a0
 )
 
 require (

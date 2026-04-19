@@ -20,3 +20,4 @@ downloads/
 cmd/admin/dist/
 cmd/admin/node_modules/
 xrcuo-lib/
+data/
