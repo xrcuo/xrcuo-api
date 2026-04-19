@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"github.com/xrcuo/xrcuo-lib/common"
 )
 
@@ -43,10 +44,14 @@ func SearchRegionHandler(c *gin.Context) {
 		return
 	}
 
+	// 调试日志：输出原始查询结果
+	logrus.Infof("IP查询调试 - IP: %s, Country: %s, Province: %s, City: %s, Isp: %s",
+		ip, regionParts.Country, regionParts.Province, regionParts.City, regionParts.Isp)
+
 	// 3. 构造响应数据
 	locationParts := []string{regionParts.Country, regionParts.Province, regionParts.City}
-	location := common.JoinNonEmpty(locationParts, "")
-	area := common.JoinNonEmpty(append(locationParts, regionParts.Isp), "")
+	location := common.JoinNonEmpty(locationParts, " ")
+	area := common.JoinNonEmpty(append(locationParts, regionParts.Isp), " ")
 
 	response.Data = &Data{
 		IP:       ip,
