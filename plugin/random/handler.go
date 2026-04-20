@@ -1,6 +1,7 @@
 package random
 
 import (
+	"fmt"
 	"io/fs"
 	"math/rand"
 	"net/http"
@@ -13,13 +14,6 @@ import (
 	"github.com/xrcuo/xrcuo-lib/common"
 	"github.com/xrcuo/xrcuo-lib/config"
 )
-
-// 随机图片API提供者列表
-var imageProviders = []string{
-	"https://picsum.photos/800/600",
-	"https://source.unsplash.com/random/800x600",
-	"https://random.imagecdn.app/800/600",
-}
 
 // 支持的图片扩展名
 var supportedImageExtensions = map[string]bool{
@@ -48,7 +42,7 @@ func getLocalImages() ([]string, error) {
 	cm := config.GetInstance()
 	// 获取当前配置
 	conf := cm.GetConfig()
-	
+
 	// 检查是否启用本地图片
 	if !conf.RandomImage.LocalEnabled {
 		return nil, nil
@@ -102,7 +96,7 @@ func GetRandomImageHandler(c *gin.Context) {
 	// 获取本地图片列表
 	images, err := getLocalImages()
 
-	// 优先使用本地图片（如果启用且有图片）
+	// 检查本地图片是否可用
 	if len(images) > 0 && err == nil {
 		// 随机选择一张本地图片
 		index := rand.Intn(len(images))
@@ -121,15 +115,11 @@ func GetRandomImageHandler(c *gin.Context) {
 		return
 	}
 
-	// 如果本地图片不可用，使用远程图片提供者
-	index := rand.Intn(len(imageProviders))
-	imageURL := imageProviders[index]
-
-	// 记录请求日志（只记录关键信息）
-	logrus.Debugf("随机图片请求: %s, IP: %s", imageURL, c.ClientIP())
-
-	// 重定向到随机图片URL
-	c.Redirect(http.StatusFound, imageURL)
+	// 本地图片不可用时返回错误
+	logrus.Warnf("本地图片不可用，请求IP: %s", c.ClientIP())
+	common.JSONResponse(c, http.StatusNotFound, map[string]string{
+		"error": "本地图片不可用，请配置本地图片路径",
+	})
 }
 
 // GetRandomImageInfoHandler 获取随机图片信息的处理函数
@@ -137,7 +127,7 @@ func GetRandomImageInfoHandler(c *gin.Context) {
 	// 获取本地图片列表
 	images, err := getLocalImages()
 
-	// 优先使用本地图片（如果启用且有图片）
+	// 检查本地图片是否可用
 	if len(images) > 0 && err == nil {
 		// 随机选择一张本地图片
 		index := rand.Intn(len(images))
@@ -151,23 +141,50 @@ func GetRandomImageInfoHandler(c *gin.Context) {
 		return
 	}
 
-	// 如果本地图片不可用，使用远程图片提供者
-	index := rand.Intn(len(imageProviders))
-	imageURL := imageProviders[index]
-	provider := "random"
+	// 本地图片不可用时返回错误
+	logrus.Warnf("本地图片不可用，请求IP: %s", c.ClientIP())
+	common.JSONResponse(c, http.StatusNotFound, map[string]string{
+		"error": "本地图片不可用，请配置本地图片路径",
+	})
+}
 
-	switch index {
-	case 0:
-		provider = "picsum.photos"
-	case 1:
-		provider = "unsplash.com"
-	case 2:
-		provider = "random.imagecdn.app"
+// GetDmImgHandler 随机二次元壁纸处理函数
+func GetDmImgHandler(c *gin.Context) {
+	// 检查info参数，如果有则返回接口信息
+	if c.Query("info") != "" {
+		common.JSONResponse(c, http.StatusOK, DmImgInfoResponse{
+			Name:   "随机二次元壁纸",
+			Format: "image,json,xml,jsonp,text",
+			Method: "GET,POST,PUT",
+			Query: []DmImgQueryParam{
+				{
+					Param: "format",
+					Value: "image",
+					Des:   "跳转到图片",
+				},
+			},
+		})
+		return
 	}
 
-	// 返回远程图片信息
-	common.JSONResponse(c, http.StatusOK, ImageResponse{
-		URL:      imageURL,
-		Provider: provider,
-	})
+	// 生成随机图片URL
+	url := "https://cache.aqco.top/static/api/img/dm/" + fmt.Sprintf("%d", rand.Intn(2494)+1) + ".jpg"
+	format := c.Query("format")
+
+	switch format {
+	case "image":
+		c.Redirect(http.StatusFound, url)
+		return
+	case "text":
+		c.String(http.StatusOK, url)
+		return
+	default:
+		common.JSONResponse(c, http.StatusOK, DmImgResult{
+			Code: "200",
+			Msg:  "请求成功",
+			Data: DmImgData{
+				URL: url,
+			},
+		})
+	}
 }

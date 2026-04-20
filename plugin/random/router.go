@@ -28,6 +28,10 @@ func (p *randomPlugin) RegisterRouter(group *gin.RouterGroup) {
 		group.GET("/random/image", GetRandomImageHandler)
 		// 获取随机图片信息（返回JSON格式）
 		group.GET("/random/image/info", GetRandomImageInfoHandler)
+		// 随机二次元壁纸
+		group.GET("/random/dmimg", GetDmImgHandler)
+		group.POST("/random/dmimg", GetDmImgHandler)
+		group.PUT("/random/dmimg", GetDmImgHandler)
 	}
 }
 
