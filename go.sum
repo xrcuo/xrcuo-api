@@ -101,6 +101,8 @@ github.com/ugorji/go/codec v1.3.1 h1:waO7eEiFDwidsBN6agj1vJQ4AG7lh2yqXyOXqhgQuyY
 github.com/ugorji/go/codec v1.3.1/go.mod h1:pRBVtBSKl77K30Bv8R2P+cLSGaTtex6fsA2Wjqmfxj4=
 github.com/xrcuo/xrcuo-lib v0.0.0-20260419060801-d67b59a685d1 h1:yazo/Oh0lCtGrVxbfsjfHEoGXiKADcpysL3NmKzhCDY=
 github.com/xrcuo/xrcuo-lib v0.0.0-20260419060801-d67b59a685d1/go.mod h1:uiojkqKiC525+rwPki4t083UxqQGFLZ2tzPmHzUYfeg=
+github.com/xrcuo/xrcuo-lib v0.0.0-20260420052712-71adcf6d5511 h1:urhX13D53zxzG+pvfNzfohQbz7WTvBCDpsfhNZkr1f8=
+github.com/xrcuo/xrcuo-lib v0.0.0-20260420052712-71adcf6d5511/go.mod h1:uiojkqKiC525+rwPki4t083UxqQGFLZ2tzPmHzUYfeg=
 go.mongodb.org/mongo-driver/v2 v2.5.1 h1:j2U/Qp+wvueSpqitLCSZPT/+ZpVc1xzuwdHWwl7d8ro=
 go.mongodb.org/mongo-driver/v2 v2.5.1/go.mod h1:yOI9kBsufol30iFsl1slpdq1I0eHPzybRWdyYUs8K/0=
 go.uber.org/mock v0.6.0 h1:hyF9dfmbgIX5EfOdasqLsWD6xqpNZlXblLB/Dbnwv3Y=
