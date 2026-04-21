@@ -6,7 +6,8 @@ require (
 	github.com/gin-gonic/gin v1.12.0
 	github.com/go-ping/ping v1.2.0
 	github.com/sirupsen/logrus v1.9.4
-	github.com/xrcuo/xrcuo-lib v0.0.0-20260420052712-71adcf6d5511
+	github.com/xrcuo/xrcuo-lib v0.0.0-20260421045614-fcdf83c634c6
+	golang.org/x/crypto v0.50.0
 )
 
 require (
@@ -43,7 +44,6 @@ require (
 	github.com/ugorji/go/codec v1.3.1 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.5.1 // indirect
 	golang.org/x/arch v0.26.0 // indirect
-	golang.org/x/crypto v0.50.0 // indirect
 	golang.org/x/net v0.53.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.43.0 // indirect
