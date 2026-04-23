@@ -12,16 +12,14 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/xrcuo/xrcuo-api/plugin"
 	"github.com/xrcuo/xrcuo-lib/common"
 	"github.com/xrcuo/xrcuo-lib/config"
 	"github.com/xrcuo/xrcuo-lib/db"
 	"github.com/xrcuo/xrcuo-lib/log"
-	"github.com/xrcuo/xrcuo-api/plugin"
 )
 
 //go:embed static
-//go:embed docs
-//go:embed docs/_sidebar.md
 //go:embed web
 var embeddedFiles embed.FS
 
@@ -85,12 +83,6 @@ func SetupStaticFiles(r *gin.Engine) {
 
 	r.StaticFS("/static", http.FS(staticFS))
 
-	docsFS, err := fs.Sub(embeddedFiles, "docs")
-	if err != nil {
-		logrus.Fatalf("获取docs子目录失败：%v", err)
-	}
-	r.StaticFS("/docs", http.FS(docsFS))
-
 	r.GET("/favicon.ico", func(c *gin.Context) {
 		c.FileFromFS("favicon.ico", http.FS(staticFS))
 	})
@@ -100,7 +92,6 @@ func StartServer(r *gin.Engine) {
 
 	port := config.GetServerPort()
 	logrus.Infof("服务启动成功，监听地址：http://localhost%s", port)
-	logrus.Infof("API文档：http://localhost%s/docs/", port)
 	logrus.Infof("IP地址查询：http://localhost%s/api/ip?ip=114.114.114.114", port)
 	logrus.Infof("获取访问者IP：http://localhost%s/api/ipify", port)
 	logrus.Infof("Ping接口示例：http://localhost%s/api/ping?target=www.baidu.com&count=3", port)
