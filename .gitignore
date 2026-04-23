@@ -1,6 +1,6 @@
 stats.db
 *.log
-的temp/   
+temp/   
 config.yaml
 ip2region_v4.xdb
 ip2region_v6.xdb
