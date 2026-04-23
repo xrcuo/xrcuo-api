@@ -1,6 +1,6 @@
 stats.db
 *.log
-temp/   
+的temp/   
 config.yaml
 ip2region_v4.xdb
 ip2region_v6.xdb
@@ -21,3 +21,5 @@ cmd/admin/dist/
 cmd/admin/node_modules/
 xrcuo-lib/
 data/
+xrcuo-api-docs/
+web.yaml
