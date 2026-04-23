@@ -9,9 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/xrcuo/xrcuo-api/plugin"
 	"github.com/xrcuo/xrcuo-lib/common"
 	"github.com/xrcuo/xrcuo-lib/config"
-	"github.com/xrcuo/xrcuo-api/plugin"
 )
 
 func SetupRoutes(r *gin.Engine) {
@@ -88,6 +88,15 @@ func SetupRoutes(r *gin.Engine) {
 		if err != nil {
 			c.String(http.StatusInternalServerError, "Failed to execute template: %v", err)
 		}
+	})
+
+	// API 文档静态文件服务 - /docs/ 路径
+	docsFS, _ := fs.Sub(embeddedFiles, "docs")
+	r.StaticFS("/docs/", http.FS(docsFS))
+
+	// 重定向 /docs 到 /docs/
+	r.GET("/docs", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/docs/")
 	})
 
 	r.NoRoute(func(c *gin.Context) {

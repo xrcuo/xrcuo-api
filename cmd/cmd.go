@@ -21,6 +21,7 @@ import (
 
 //go:embed static
 //go:embed web
+//go:embed docs
 var embeddedFiles embed.FS
 
 var GlobalPluginManager *plugin.PluginManager
