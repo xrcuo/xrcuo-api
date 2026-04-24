@@ -9,6 +9,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
+	"github.com/xrcuo/xrcuo-api/internal/handler"
 	"github.com/xrcuo/xrcuo-api/plugin"
 	"github.com/xrcuo/xrcuo-lib/common"
 	"github.com/xrcuo/xrcuo-lib/config"
@@ -98,6 +99,27 @@ func SetupRoutes(r *gin.Engine) {
 	r.GET("/docs", func(c *gin.Context) {
 		c.Redirect(http.StatusMovedPermanently, "/docs/")
 	})
+
+	// 后台管理 API 路由
+	adminGroup := r.Group("/admin")
+	{
+		adminGroup.POST("/login", handler.Login)
+		adminGroup.GET("/user", handler.AuthMiddleware(), handler.GetCurrentUser)
+		adminGroup.POST("/password", handler.AuthMiddleware(), handler.ChangePassword)
+
+		// API 文档管理
+		adminGroup.GET("/api-docs", handler.ApiDocList)
+		adminGroup.GET("/api-docs/:id", handler.ApiDocGet)
+		adminGroup.POST("/api-docs", handler.AuthMiddleware(), handler.ApiDocCreate)
+		adminGroup.PUT("/api-docs", handler.AuthMiddleware(), handler.ApiDocUpdate)
+		adminGroup.DELETE("/api-docs/:id", handler.AuthMiddleware(), handler.ApiDocDelete)
+		adminGroup.GET("/api-docs/categories", handler.ApiDocCategories)
+
+		// 系统配置管理
+		adminGroup.GET("/config", handler.AuthMiddleware(), handler.SystemConfigGet)
+		adminGroup.POST("/config", handler.AuthMiddleware(), handler.SystemConfigSet)
+		adminGroup.GET("/configs", handler.AuthMiddleware(), handler.SystemConfigList)
+	}
 
 	r.NoRoute(func(c *gin.Context) {
 		path := c.Request.URL.Path
