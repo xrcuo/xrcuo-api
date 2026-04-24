@@ -119,6 +119,10 @@ func SetupRoutes(r *gin.Engine) {
 		adminGroup.GET("/config", handler.AuthMiddleware(), handler.SystemConfigGet)
 		adminGroup.POST("/config", handler.AuthMiddleware(), handler.SystemConfigSet)
 		adminGroup.GET("/configs", handler.AuthMiddleware(), handler.SystemConfigList)
+
+		// 系统资源监控
+		adminGroup.GET("/metrics", handler.AuthMiddleware(), handler.GetSystemMetrics)
+		adminGroup.GET("/metrics/history", handler.AuthMiddleware(), handler.GetSystemMetricsHistory)
 	}
 
 	r.NoRoute(func(c *gin.Context) {
