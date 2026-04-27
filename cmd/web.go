@@ -123,6 +123,10 @@ func SetupRoutes(r *gin.Engine) {
 		// 系统资源监控
 		adminGroup.GET("/metrics", handler.AuthMiddleware(), handler.GetSystemMetrics)
 		adminGroup.GET("/metrics/history", handler.AuthMiddleware(), handler.GetSystemMetricsHistory)
+
+		// 备案号管理
+		adminGroup.GET("/icp", handler.ICPGet)
+		adminGroup.POST("/icp", handler.AuthMiddleware(), handler.ICPSet)
 	}
 
 	r.NoRoute(func(c *gin.Context) {
