@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	"github.com/xrcuo/xrcuo-api/internal/monitor"
 	"github.com/xrcuo/xrcuo-lib/common"
@@ -14,7 +16,13 @@ func GetSystemMetrics(c *gin.Context) {
 
 // GetSystemMetricsHistory 获取历史指标数据
 func GetSystemMetricsHistory(c *gin.Context) {
-	limit := 60 // 默认返回最近60个点（5分钟）
+	limit := monitor.DefaultHistoryLimit
+	if limitStr := c.Query("limit"); limitStr != "" {
+		if parsedLimit, err := strconv.Atoi(limitStr); err == nil && parsedLimit > 0 {
+			limit = parsedLimit
+		}
+	}
+	
 	history := monitor.GlobalMonitor.GetHistory(limit)
 	common.SuccessResponse(c, history, "获取成功")
 }
